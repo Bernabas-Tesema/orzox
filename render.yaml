@@ -2,6 +2,7 @@ services:
   - type: web
     name: orzo-backend
     runtime: docker
+    rootDir: backend1
     dockerfilePath: ./backend1/Dockerfile
     dockerContext: ./backend1
     healthCheckPath: /api
