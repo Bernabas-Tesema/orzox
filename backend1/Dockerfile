@@ -25,5 +25,5 @@ COPY . .
 # Expose Django port
 EXPOSE 8000
 
-# Run migrations and serve Django with a production WSGI server
-CMD ["sh", "-c", "python manage.py migrate && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --timeout 120"]
+# Run migrations and collect static assets before starting Django
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py create_deploy_admin && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 1 --timeout 120"]
