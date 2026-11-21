@@ -34,10 +34,18 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
   });
 
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    throw new Error(errorBody.error || errorBody.message || `HTTP ${res.status}: ${res.statusText}`);
+    const contentType = res.headers.get('content-type') || '';
+    if (contentType.includes('application/json')) {
+      const errorBody = await res.json().catch(() => ({}));
+      throw new Error(errorBody.error || errorBody.message || `HTTP ${res.status}: ${res.statusText}`);
+    }
+    throw new Error(`API proxy returned ${res.status}: ${res.statusText}. Check Vercel API rewrites and Render host settings.`);
   }
 
+  const contentType = res.headers.get('content-type') || '';
+  if (!contentType.includes('application/json')) {
+    throw new Error('API proxy returned HTML instead of JSON. Check Vercel rewrites and Render host settings.');
+  }
   return res.json();
 }
 

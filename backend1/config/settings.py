@@ -21,7 +21,24 @@ if env_file.exists():
 
 SECRET_KEY = os.getenv("SECRET_KEY", "dev-only-orzo-change-before-any-real-deployment")
 DEBUG = os.getenv("DEBUG", "True").lower() in ("true", "1")
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("ALLOWED_HOSTS", "*").split(",") if host.strip()]
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv(
+        "ALLOWED_HOSTS",
+        "localhost,127.0.0.1,.onrender.com,orzox-1.onrender.com,.vercel.app,orzox.vercel.app",
+    ).split(",")
+    if host.strip()
+]
+for host in (
+    "localhost",
+    "127.0.0.1",
+    ".onrender.com",
+    "orzox-1.onrender.com",
+    ".vercel.app",
+    "orzox.vercel.app",
+):
+    if host not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.append(host)
 APPEND_SLASH = True
 
 # Public URL of this same Django app (portal + API). On cPanel set to your domain.
@@ -179,7 +196,7 @@ LOGOUT_REDIRECT_URL = "/admin/login/"
 
 # Trust HTTPS termination from cPanel / Cloudflare / load balancers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_HOST = False
 SESSION_COOKIE_SECURE = os.getenv("SESSION_COOKIE_SECURE", str(not DEBUG)).lower() in ("true", "1")
 CSRF_COOKIE_SECURE = os.getenv("CSRF_COOKIE_SECURE", str(not DEBUG)).lower() in ("true", "1")
 SECURE_SSL_REDIRECT = os.getenv("SECURE_SSL_REDIRECT", "False").lower() in ("true", "1")
