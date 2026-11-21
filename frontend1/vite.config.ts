@@ -3,10 +3,6 @@ import react from '@vitejs/plugin-react';
 import path from 'path';
 import {defineConfig} from 'vite';
 
-// Production builds land in Django so cPanel can serve the portal from one Python app
-// (no Node.js runtime required on the host).
-const djangoFrontendDist = path.resolve(__dirname, '../backend/frontend_dist');
-
 export default defineConfig(() => {
   return {
     plugins: [react(), tailwindcss()],
@@ -17,7 +13,7 @@ export default defineConfig(() => {
       },
     },
     build: {
-      outDir: djangoFrontendDist,
+      outDir: path.resolve(__dirname, 'dist'),
       emptyOutDir: true,
     },
     server: {

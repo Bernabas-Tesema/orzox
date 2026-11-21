@@ -1,7 +1,7 @@
 {
   "framework": null,
   "buildCommand": "npm run build:web",
-  "outputDirectory": "backend/frontend_dist",
+  "outputDirectory": "frontend1/dist",
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
