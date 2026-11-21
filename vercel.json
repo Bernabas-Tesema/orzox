@@ -5,11 +5,11 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "$RENDER_BACKEND_URL/api/v1/$1"
+      "destination": "https://orzox-1.onrender.com/api/v1/$1"
     },
     {
       "source": "/api/(.*)",
-      "destination": "$RENDER_BACKEND_URL/api/$1"
+      "destination": "https://orzox-1.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",
