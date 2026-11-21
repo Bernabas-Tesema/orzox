@@ -3,8 +3,9 @@ services:
     name: orzo-backend
     runtime: docker
     rootDir: backend1
-    dockerfilePath: ./backend1/Dockerfile
-    dockerContext: ./backend1
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    startCommand: sh -c "python manage.py migrate --noinput && python manage.py create_deploy_admin && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 1 --timeout 120"
     healthCheckPath: /api
     envVars:
       - key: DEBUG
@@ -13,6 +14,10 @@ services:
         generateValue: true
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: ADMIN_EMAIL
+        value: "admin@orzo.et"
+      - key: ADMIN_PASSWORD
+        sync: false
       - key: DB_ENGINE
         value: postgresql
       - key: DATABASE_URL
