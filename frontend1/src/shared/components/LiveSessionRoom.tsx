@@ -812,11 +812,11 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               <div className="flex items-center space-x-2">
                 <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
                 <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Live Waiting Calls ({waitingCalls.length})
+                  Calls Waiting ({waitingCalls.length})
                 </h3>
               </div>
               <p className="text-[10px] text-slate-400 mt-1">
-                Active rings only. Take one to switch — your current call ends.
+                Pick a call below — your current call ends first.
               </p>
             </div>
             <div className="p-3 space-y-2">
@@ -839,39 +839,48 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                       <span className="text-xs font-mono text-cyan-300 font-bold truncate">
                         {call.reference}
                       </span>
-                      <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg ${
-                        urgent ? 'bg-red-500/30 text-red-300 animate-pulse' : 'bg-amber-500/20 text-amber-300'
-                      }`}>
-                        ⏱ {secondsLeft}s
-                      </span>
+                      {expiresAt ? (
+                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg ${
+                          urgent ? 'bg-red-500/30 text-red-300 animate-pulse' : 'bg-amber-500/20 text-amber-300'
+                        }`}>
+                          ⏱ {secondsLeft}s
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-lg font-bold">
+                          Queued
+                        </span>
+                      )}
                     </div>
 
-                    {/* Visual countdown bar */}
-                    <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                      <div
-                        className={`h-1.5 rounded-full transition-all ${urgent ? 'bg-red-400' : 'bg-amber-400'}`}
-                        style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
-                      />
-                    </div>
+                    {/* Visual countdown bar — only when timed */}
+                    {expiresAt > 0 && (
+                      <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-1.5 rounded-full transition-all ${urgent ? 'bg-red-400' : 'bg-amber-400'}`}
+                          style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
+                        />
+                      </div>
+                    )}
 
                     <div className="text-[11px] text-slate-300 space-y-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-white">{call.sourceLanguage?.toUpperCase() || '???'}</span>
+                      <div className="font-bold text-white text-xs truncate">{call.requesterName}</div>
+                      <div className="text-slate-400 truncate">{call.organizationName}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <span className="font-bold text-cyan-200">{call.sourceLanguage?.toUpperCase() || '???'}</span>
                         <span className="text-slate-500">→</span>
-                        <span className="font-bold text-white">{call.targetLanguage?.toUpperCase() || '???'}</span>
+                        <span className="font-bold text-cyan-200">{call.targetLanguage?.toUpperCase() || '???'}</span>
                         {call.urgency === 'emergency' && (
                           <span className="text-[9px] bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full font-bold uppercase ml-auto">
                             Emergency
                           </span>
                         )}
                       </div>
-                      <div className="text-slate-400">{call.serviceCategory.replace(/_/g, ' ')}</div>
-                      <div className="text-slate-400 truncate">{call.requesterName}</div>
+                      <div className="text-slate-500 capitalize">{call.serviceCategory.replace(/_/g, ' ')}</div>
                     </div>
 
                     <button
                       onClick={() => handleTakeCall(call.reference)}
-                      disabled={takingCall === call.reference || secondsLeft === 0}
+                      disabled={takingCall === call.reference || (expiresAt > 0 && secondsLeft === 0)}
                       className={`w-full py-2 rounded-lg text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                         urgent
                           ? 'bg-red-600 hover:bg-red-500'

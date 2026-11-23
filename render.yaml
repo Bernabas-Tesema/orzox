@@ -23,6 +23,8 @@ services:
         value: postgresql
       - key: DJANGO_API_URL
         value: "https://orzox-1.onrender.com"
+      - key: APP_URL
+        value: "https://orzox.vercel.app"
       - key: LIVEKIT_URL
         value: "wss://orozo-translation-8nvelq7r.livekit.cloud"
       - key: LIVEKIT_API_KEY

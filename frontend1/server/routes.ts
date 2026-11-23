@@ -2015,7 +2015,14 @@ router.get('/staff', (req: Request, res: Response) => {
 router.get('/waiting-calls', (req: Request, res: Response) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });
-  const waiting = db.requests.filter((r) => r.status === 'submitted' || r.status === 'pending_matching');
+  const waiting = db.requests
+    .filter((r) => r.status === 'submitted' || r.status === 'pending_matching' || r.status === 'assigned')
+    .map((r) => {
+      const asg = db.assignments
+        .filter((a) => a.requestReference === r.reference && a.outcome === 'pending')
+        .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())[0];
+      return { ...r, assignmentExpiresAt: asg?.expiresAt || null, queued: !asg };
+    });
   res.json({ waitingCalls: waiting });
 });
 
