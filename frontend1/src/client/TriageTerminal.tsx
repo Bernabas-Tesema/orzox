@@ -315,6 +315,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
 
         {showCalling ? (
           <WaitingState
+            key={attempt}
             ringingRequest={ringingRequest}
             interpreterReady={interpreterReady}
             sourceLanguage={sourceLanguage}
