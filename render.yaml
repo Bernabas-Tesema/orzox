@@ -1,11 +1,10 @@
 services:
   - type: web
     name: orzo-backend
-    runtime: docker
+    runtime: python
     rootDir: backend1
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    startCommand: sh -c "python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py create_deploy_admin && gunicorn config.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 1 --timeout 120"
+    buildCommand: pip install -r requirements.txt
+    startCommand: python manage.py migrate --noinput && python manage.py collectstatic --noinput && python manage.py create_deploy_admin && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     healthCheckPath: /api
     envVars:
       - key: DEBUG
