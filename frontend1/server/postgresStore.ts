@@ -211,6 +211,7 @@ export async function connectPortalDatabase(): Promise<boolean> {
     const accounts = await client.query('SELECT * FROM api_account');
     if (accounts.rowCount === 0) {
       console.warn('PostgreSQL orzo_db has no accounts. The portal is using its built-in records.');
+      applyEnvAdminPassword();
       return false;
     }
 
@@ -310,6 +311,7 @@ export async function connectPortalDatabase(): Promise<boolean> {
     return true;
   } catch (error) {
     console.error('PostgreSQL connection failed. The portal is using its built-in records.', error);
+    applyEnvAdminPassword();
     return false;
   } finally {
     client.release();
