@@ -190,7 +190,10 @@ def save_portal_document(key, payload):
 
 
 def platform_configuration(request):
-    settings_doc = portal_document("settings") or {}
+    try:
+        settings_doc = portal_document("settings") or {}
+    except Exception:
+        settings_doc = {}
     if request.method == "POST":
         settings_doc.update(
             {
@@ -202,8 +205,11 @@ def platform_configuration(request):
                 "systemBannerNotice": request.POST.get("systemBannerNotice") or "",
             }
         )
-        save_portal_document("settings", settings_doc)
-        messages.success(request, "Platform configuration saved to the shared ORZO database.")
+        try:
+            save_portal_document("settings", settings_doc)
+            messages.success(request, "Platform configuration saved to the shared ORZO database.")
+        except Exception:
+            messages.warning(request, "Settings saved locally but could not be persisted to the shared database.")
         return redirect("admin:platform-configuration")
     return render(
         request,
@@ -214,7 +220,10 @@ def platform_configuration(request):
 
 def security_audit(request):
     query = (request.GET.get("q") or "").strip().lower()
-    logs = portal_document("auditLogs") or []
+    try:
+        logs = portal_document("auditLogs") or []
+    except Exception:
+        logs = []
     if not isinstance(logs, list):
         logs = []
     if query:
@@ -234,13 +243,17 @@ def security_audit(request):
 
 def admin_index(request, extra_context=None):
     extra = extra_context or {}
+    try:
+        audit_count = len(portal_document("auditLogs") or [])
+    except Exception:
+        audit_count = 0
     extra.update(
         {
             "organization_count": Account.objects.filter(role="client").count(),
             "language_count": Language.objects.count(),
             "interpreter_count": Interpreter.objects.count(),
             "request_count": InterpretationRequest.objects.count(),
-            "audit_count": len(portal_document("auditLogs") or []),
+            "audit_count": audit_count,
         }
     )
     return admin.site.__class__.index(admin.site, request, extra)
