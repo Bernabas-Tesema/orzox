@@ -5,9 +5,9 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const moduleDir = path.dirname(__filename);
-// tsx runs from frontend/; cPanel Passenger runs the bundled app.js from the repo root.
+// tsx runs from frontend1/; cPanel Passenger runs the bundled app.js from the repo root.
 const frontendRoot =
-  path.basename(moduleDir) === 'frontend' ? moduleDir : path.join(moduleDir, 'frontend');
+  path.basename(moduleDir) === 'frontend1' ? moduleDir : path.join(moduleDir, 'frontend1');
 dotenv.config({ path: path.resolve(frontendRoot, '../.env') });
 
 const { createApiApp } = await import('./server/app');
