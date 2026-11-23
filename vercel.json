@@ -6,11 +6,11 @@
   "rewrites": [
     {
       "source": "/api/v1/(.*)",
-      "destination": "https://orzox-1.onrender.com/api/v1/$1"
+      "destination": "https://orzo-portal.onrender.com/api/v1/$1"
     },
     {
       "source": "/api/(.*)",
-      "destination": "https://orzox-1.onrender.com/api/$1"
+      "destination": "https://orzo-portal.onrender.com/api/$1"
     },
     {
       "source": "/(.*)",

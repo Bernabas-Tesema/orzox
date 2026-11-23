@@ -1,5 +1,40 @@
 services:
   - type: web
+    name: orzo-portal
+    runtime: node
+    rootDir: frontend1
+    buildCommand: npm install && npm run build:all
+    startCommand: node app.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: PLATFORM_ADMIN_EMAIL
+        value: "orozo@gmail.com"
+      - key: PLATFORM_ADMIN_PASSWORD
+        value: "orozo@2026"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: orzo-postgres
+          property: connectionString
+      - key: DB_ENGINE
+        value: postgresql
+      - key: DJANGO_API_URL
+        value: "https://orzox-1.onrender.com"
+      - key: LIVEKIT_URL
+        value: "wss://orozo-translation-8nvelq7r.livekit.cloud"
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: HASAB_API_KEY
+        sync: false
+
+  - type: web
     name: orzo-backend
     runtime: python
     rootDir: backend1
