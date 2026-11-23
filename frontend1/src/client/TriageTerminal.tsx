@@ -16,6 +16,148 @@ import {
 } from 'lucide-react';
 import { workplaceContext, workplaceLanguageLabel, workplaceOf } from '../shared/workplace';
 
+// ── Waiting / searching state component ──────────────────────────────────────
+interface WaitingStateProps {
+  ringingRequest: InterpretationRequest | undefined;
+  interpreterReady: boolean;
+  sourceLanguage: string;
+  targetLanguage: string;
+  callMode: 'audio' | 'video';
+  organizationName: string;
+  languageName: (code?: string) => string;
+  onJoinSession: (id: string) => void;
+  onBack: () => void;
+  onRetry: () => void;
+}
+
+function WaitingState({
+  ringingRequest, interpreterReady, sourceLanguage, targetLanguage,
+  callMode, organizationName, languageName, onJoinSession, onBack, onRetry,
+}: WaitingStateProps) {
+  const [elapsed, setElapsed] = React.useState(0);
+  const [noAnswer, setNoAnswer] = React.useState(false);
+
+  React.useEffect(() => {
+    const timer = setInterval(() => setElapsed((s) => s + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // After 60 seconds with no interpreter, show the retry option
+  React.useEffect(() => {
+    if (elapsed >= 60 && !interpreterReady) setNoAnswer(true);
+  }, [elapsed, interpreterReady]);
+
+  const fmt = (s: number) =>
+    `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+
+  if (interpreterReady && ringingRequest?.activeSessionId) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-5 text-center space-y-3">
+          <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
+            <Check className="w-7 h-7 text-emerald-600" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900">Interpreter ready</h2>
+          <p className="text-sm text-slate-500">Your interpreter accepted the request and is waiting in the room.</p>
+          <button
+            type="button"
+            onClick={() => onJoinSession(ringingRequest.activeSessionId!)}
+            className="w-full h-13 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2"
+          >
+            {callMode === 'video' ? <Video className="w-4 h-4" /> : <PhoneCall className="w-4 h-4" />}
+            Join {callMode === 'video' ? 'video' : 'audio'} call
+          </button>
+        </div>
+        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 space-y-1">
+          <p><span className="font-bold text-slate-700">Ref:</span> {ringingRequest.reference}</p>
+          <p><span className="font-bold text-slate-700">Languages:</span> {languageName(ringingRequest.sourceLanguage)} → {languageName(ringingRequest.targetLanguage)}</p>
+          <p><span className="font-bold text-slate-700">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (noAnswer) {
+    return (
+      <div className="space-y-4">
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-5 text-center space-y-3">
+          <div className="mx-auto w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+            <AlertCircle className="w-7 h-7 text-amber-600" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900">No interpreter available yet</h2>
+          <p className="text-sm text-slate-500">
+            All interpreters for this language pair are currently busy or offline.
+            You can try again or wait — the request stays in the queue.
+          </p>
+          <p className="text-xs text-slate-400">Waiting: <span className="font-mono font-bold">{fmt(elapsed)}</span></p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Try again
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full h-11 rounded-xl border border-slate-300 bg-white text-slate-600 text-xs font-bold cursor-pointer hover:bg-slate-50"
+        >
+          Back to form
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5">
+        <div className="flex items-center gap-3">
+          <span className="relative flex h-3 w-3 shrink-0">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60 animate-ping" style={{ animationDuration: '1.5s' }} />
+            <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500" />
+          </span>
+          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+            Ringing interpreters…
+          </p>
+          <span className="ml-auto font-mono text-sm font-black text-slate-700">{fmt(elapsed)}</span>
+        </div>
+        <h2 className="mt-3 text-lg font-black text-slate-900 leading-snug">
+          Locating an available interpreter
+        </h2>
+        <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+          Please stay on this screen. Interpreters are being notified now.
+        </p>
+        {/* Animated ring bars */}
+        <div className="mt-4 flex items-end justify-center gap-1 h-8">
+          {[0.3,0.6,1.0,0.7,0.4,0.8,0.5].map((h, i) => (
+            <span
+              key={i}
+              className="w-1.5 rounded-full bg-blue-400 animate-bounce"
+              style={{ height: `${Math.round(h * 28)}px`, animationDelay: `${i * 0.1}s`, animationDuration: '0.9s' }}
+            />
+          ))}
+        </div>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 space-y-1">
+        <p><span className="font-bold text-slate-700">Ref:</span> {ringingRequest?.reference || '—'}</p>
+        <p><span className="font-bold text-slate-700">Languages:</span> {languageName(sourceLanguage)} → {languageName(targetLanguage)}</p>
+        <p><span className="font-bold text-slate-700">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
+      </div>
+      <button
+        type="button"
+        onClick={onBack}
+        className="w-full h-11 rounded-xl border border-slate-300 bg-white text-slate-600 text-xs font-bold cursor-pointer hover:bg-slate-50"
+      >
+        Back to form
+      </button>
+    </div>
+  );
+}
+
+
+
 interface TriageTerminalProps {
   currentUser: User;
   requests: InterpretationRequest[];
@@ -157,57 +299,42 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
         )}
 
         {showCalling ? (
-          <div className="space-y-4">
-            {/* Quiet side-panel waiting indicator — no audio, no dramatic animation */}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5">
-              <div className="flex items-center gap-3">
-                <span className="relative flex h-3 w-3 shrink-0">
-                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" style={{ animationDuration: '2s' }} />
-                  <span className="relative inline-flex h-3 w-3 rounded-full bg-emerald-500" />
-                </span>
-                <p className="text-xs font-bold uppercase tracking-wider text-emerald-700">
-                  {interpreterReady ? 'Interpreter ready' : 'Searching for interpreter…'}
-                </p>
-              </div>
-
-              <h2 className="mt-3 text-lg font-black text-slate-900 leading-snug">
-                {interpreterReady ? 'An interpreter accepted your request.' : 'Locating an available interpreter.'}
-              </h2>
-              <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
-                {interpreterReady
-                  ? 'Join the call when you are ready.'
-                  : 'Please stay on this screen. This usually takes under a minute.'}
-              </p>
-
-              {interpreterReady && ringingRequest?.activeSessionId && (
-                <button
-                  type="button"
-                  onClick={() => onJoinSession(ringingRequest.activeSessionId!)}
-                  className="mt-5 w-full h-12 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm cursor-pointer transition-all"
-                >
-                  Join call
-                </button>
-              )}
-            </div>
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">This call</p>
-              <p className="mt-1 font-mono text-sm font-bold text-slate-900">{ringingRequest?.reference || 'Connecting'}</p>
-              <p className="mt-2 text-sm text-slate-700">
-                {languageName(ringingRequest?.sourceLanguage || sourceLanguage)} to {languageName(ringingRequest?.targetLanguage || targetLanguage)}
-              </p>
-              <p className="mt-1 text-xs text-slate-500">{callMode === 'video' ? 'Video call' : 'Audio call'} · {currentUser.organizationName}</p>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                stopOutgoingRing(ringRef);
+          <WaitingState
+            ringingRequest={ringingRequest}
+            interpreterReady={interpreterReady}
+            sourceLanguage={sourceLanguage}
+            targetLanguage={targetLanguage}
+            callMode={callMode}
+            organizationName={currentUser.organizationName}
+            languageName={languageName}
+            onJoinSession={onJoinSession}
+            onBack={() => { stopOutgoingRing(ringRef); setCalling(false); }}
+            onRetry={async () => {
+              stopOutgoingRing(ringRef);
+              setCalling(false);
+              // small delay so state resets before resubmit
+              await new Promise((r) => setTimeout(r, 100));
+              setCalling(true);
+              setIsSubmitting(true);
+              try {
+                await onCreateRequest({
+                  sourceLanguage: sourceLanguage === 'unknown' ? undefined : sourceLanguage,
+                  targetLanguage,
+                  isUnknownLanguage: sourceLanguage === 'unknown',
+                  serviceCategory: workplace,
+                  urgency: 'emergency',
+                  modality: callMode,
+                  scheduleType: 'immediate',
+                  minRoutingContext: context.trim() || workplaceContext(workplace),
+                });
+              } catch (err: any) {
                 setCalling(false);
-              }}
-              className="w-full h-11 rounded-xl border border-slate-300 bg-white text-slate-600 text-xs font-bold cursor-pointer hover:bg-slate-50"
-            >
-              Back to form
-            </button>
-          </div>
+                setError(err?.message || 'Could not retry.');
+              } finally {
+                setIsSubmitting(false);
+              }
+            }}
+          />
         ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Patient Language Dropdown */}

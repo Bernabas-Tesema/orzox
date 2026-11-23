@@ -266,7 +266,7 @@ export default function App() {
       />
 
       {/* Interpreter ring overlay — shows fullscreen when a call comes in and no session is active */}
-      {currentUser.role === 'interpreter' && !portal.activeSessionRoomId && (() => {
+      {currentUser.role === 'interpreter' && !portal.activeSessionRoomId && !portal.interpreterProfile?.activeSessionId && (() => {
         const pending = portal.assignments.find((a) => a.outcome === 'pending');
         if (!pending) return null;
         const req = portal.requests.find((r) => r.reference === pending.requestReference);

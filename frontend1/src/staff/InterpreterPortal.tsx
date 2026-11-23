@@ -120,7 +120,9 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
   }, [pendingAssignment, timeLeft]);
 
   useEffect(() => {
-    if (!pendingAssignment) return;
+    // No audio ring when interpreter is already in an active session —
+    // the waiting call cards in the sidebar are shown instead.
+    if (!pendingAssignment || profile.activeSessionId) return;
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const context = new AudioContextClass();
