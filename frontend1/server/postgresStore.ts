@@ -328,8 +328,8 @@ async function persistPortalDatabase(existing?: pg.PoolClient) {
     const passwords = db.exportPasswords();
     for (const user of db.users) {
       await client.query(
-        `INSERT INTO api_account (id, email, full_name, role, client_account_type, phone, organization_name, status, password_hash)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+        `INSERT INTO api_account (id, email, full_name, role, client_account_type, phone, organization_name, status, password_hash, created_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
          ON CONFLICT (id) DO UPDATE SET
            email = EXCLUDED.email,
            full_name = EXCLUDED.full_name,
@@ -352,6 +352,7 @@ async function persistPortalDatabase(existing?: pg.PoolClient) {
           user.organizationName || 'ORZO',
           user.status,
           passwords[user.id] || '',
+          user.createdAt || new Date().toISOString(),
         ],
       );
     }
