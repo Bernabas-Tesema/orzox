@@ -1882,4 +1882,149 @@ router.post('/support/identify-audio', async (req: Request, res: Response) => {
   }
 });
 
+// ==========================================
+// MEETINGS (/api/v1/meetings)
+// ==========================================
+router.get('/meetings', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const userMeetings = db.meetings.filter((m) =>
+    m.participants.some((p) => p.accountId === user.id) || m.creatorId === user.id
+  );
+  res.json({ meetings: userMeetings });
+});
+
+router.post('/meetings', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const { title, communicationMode, participantIds } = req.body;
+  if (!title) return res.status(400).json({ error: 'title is required.' });
+  const ids: string[] = Array.isArray(participantIds) ? participantIds : [];
+  const participants: any[] = [
+    {
+      id: `mp-${Date.now()}-host`,
+      accountId: user.id,
+      accountName: user.fullName,
+      accountRole: user.role,
+      role: 'host',
+      status: 'joined',
+      joinedAt: new Date().toISOString(),
+    },
+    ...ids
+      .filter((id) => id !== user.id)
+      .map((id) => {
+        const member = db.users.find((u) => u.id === id);
+        return member
+          ? {
+              id: `mp-${Date.now()}-${id}`,
+              accountId: member.id,
+              accountName: member.fullName,
+              accountRole: member.role,
+              role: 'participant',
+              status: 'invited',
+            }
+          : null;
+      })
+      .filter(Boolean),
+  ];
+  const meeting = {
+    id: `rm_orzo_meet_${Date.now()}`,
+    title,
+    creatorId: user.id,
+    creatorName: user.fullName,
+    communicationMode: communicationMode || 'video',
+    status: 'active' as const,
+    createdAt: new Date().toISOString(),
+    participants,
+  };
+  db.meetings.push(meeting);
+  schedulePortalPersist();
+  res.json({ meeting });
+});
+
+router.get('/meetings/:id', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const meeting = db.meetings.find((m) => m.id === req.params.id);
+  if (!meeting) return res.status(404).json({ error: 'Meeting not found.' });
+  res.json({ meeting });
+});
+
+router.post('/meetings/:id/join', async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const meeting = db.meetings.find((m) => m.id === req.params.id);
+  if (!meeting) return res.status(404).json({ error: 'Meeting not found.' });
+  if (meeting.status === 'ended') return res.status(400).json({ error: 'Meeting has ended.' });
+
+  const participant = meeting.participants.find((p) => p.accountId === user.id);
+  if (participant) {
+    participant.status = 'joined';
+    participant.joinedAt = new Date().toISOString();
+  } else {
+    meeting.participants.push({
+      id: `mp-${Date.now()}-${user.id}`,
+      accountId: user.id,
+      accountName: user.fullName,
+      accountRole: user.role,
+      role: 'participant',
+      status: 'joined',
+      joinedAt: new Date().toISOString(),
+    });
+  }
+  schedulePortalPersist();
+
+  try {
+    const at = new AccessToken(livekitConfig.apiKey, livekitConfig.apiSecret, {
+      identity: user.id,
+      name: user.fullName,
+      ttl: 1800,
+    });
+    at.addGrant({ roomJoin: true, room: meeting.id, canPublish: true, canSubscribe: true });
+    const token = await at.toJwt();
+    res.json({ token, url: livekitConfig.url, room: meeting.id, identity: user.id, communicationMode: meeting.communicationMode, meeting });
+  } catch {
+    res.status(500).json({ error: 'Failed to generate meeting token.' });
+  }
+});
+
+router.post('/meetings/:id/end', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const meeting = db.meetings.find((m) => m.id === req.params.id);
+  if (!meeting) return res.status(404).json({ error: 'Meeting not found.' });
+  if (meeting.creatorId !== user.id && user.role !== 'platform_admin' && user.role !== 'supervisor') {
+    return res.status(403).json({ error: 'Only the meeting host can end this meeting.' });
+  }
+  meeting.status = 'ended';
+  meeting.endedAt = new Date().toISOString();
+  for (const p of meeting.participants) {
+    if (p.status === 'joined') p.status = 'left';
+  }
+  schedulePortalPersist();
+  res.json({ success: true, message: 'Meeting ended.' });
+});
+
+router.get('/staff', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const staff = db.users.filter((u) => u.role === 'platform_admin' || u.role === 'supervisor' || u.role === 'interpreter');
+  res.json({ staff });
+});
+
+router.get('/waiting-calls', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const waiting = db.requests.filter((r) => r.status === 'submitted' || r.status === 'pending_matching');
+  res.json({ waitingCalls: waiting });
+});
+
+router.post('/waiting-calls/:reference/take', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const request = db.requests.find((r) => r.reference === req.params.reference);
+  if (!request) return res.status(404).json({ error: 'Request not found.' });
+  res.json({ success: true, message: 'Call taken.' });
+});
+
 export default router;

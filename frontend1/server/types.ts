@@ -253,3 +253,25 @@ export interface PlatformSettings {
   telecomLowBandwidthPreset: boolean;
   systemBannerNotice: string;
 }
+
+export interface MeetingParticipant {
+  id: string;
+  accountId: string;
+  accountName: string;
+  accountRole: string;
+  role: 'host' | 'participant';
+  status: 'invited' | 'joined' | 'left';
+  joinedAt?: string;
+}
+
+export interface Meeting {
+  id: string;
+  title: string;
+  creatorId: string;
+  creatorName: string;
+  communicationMode: string;
+  status: 'active' | 'ended';
+  createdAt: string;
+  endedAt?: string;
+  participants: MeetingParticipant[];
+}

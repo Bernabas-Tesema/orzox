@@ -12,6 +12,7 @@ import {
   PlatformNotification,
   AuditLog,
   PlatformSettings,
+  Meeting,
   ServiceCategory
 } from './types';
 
@@ -728,6 +729,7 @@ class DatabaseStore {
   assignments: Assignment[] = [...INITIAL_ASSIGNMENTS];
   sessions: InterpretationSession[] = [...INITIAL_SESSIONS];
   sessionParticipants: SessionParticipant[] = [];
+  meetings: Meeting[] = [];
   completions: CompletionReport[] = [...INITIAL_COMPLETIONS];
   notifications: PlatformNotification[] = [...INITIAL_NOTIFICATIONS];
   auditLogs: AuditLog[] = [...INITIAL_AUDIT_LOGS];
