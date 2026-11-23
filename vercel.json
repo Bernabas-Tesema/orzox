@@ -1,6 +1,7 @@
 {
   "framework": null,
-  "buildCommand": "npm run build:web",
+  "installCommand": "cd frontend1 && npm install",
+  "buildCommand": "cd frontend1 && npm run build:web",
   "outputDirectory": "frontend1/dist",
   "rewrites": [
     {
