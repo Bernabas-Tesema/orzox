@@ -299,6 +299,9 @@ export async function connectPortalDatabase(): Promise<boolean> {
       if (isUsablePasswordRecord(storedPassword) && !db.hasPassword(String(row.id))) {
         db.importPasswords({ [String(row.id)]: storedPassword });
       }
+      if (row.must_change_password === true) {
+        db.importPasswordPolicy([String(row.id)]);
+      }
     }
     applyEnvAdminPassword();
     connected = true;
