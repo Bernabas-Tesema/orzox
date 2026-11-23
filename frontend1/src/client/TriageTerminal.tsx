@@ -28,11 +28,14 @@ interface WaitingStateProps {
   onJoinSession: (id: string) => void;
   onBack: () => void;
   onRetry: () => void;
+  attempt: number;
+  onOpenSupport: () => void;
 }
 
 function WaitingState({
   ringingRequest, interpreterReady, sourceLanguage, targetLanguage,
   callMode, organizationName, languageName, onJoinSession, onBack, onRetry,
+  attempt, onOpenSupport,
 }: WaitingStateProps) {
   const [elapsed, setElapsed] = React.useState(0);
   const [noAnswer, setNoAnswer] = React.useState(false);
@@ -42,10 +45,18 @@ function WaitingState({
     return () => clearInterval(timer);
   }, []);
 
-  // After 60 seconds with no interpreter, show the retry option
+  // After 60 seconds with no interpreter, show the retry option.
+  // On second attempt failure, auto-open ORZO Support.
   React.useEffect(() => {
-    if (elapsed >= 60 && !interpreterReady) setNoAnswer(true);
-  }, [elapsed, interpreterReady]);
+    if (elapsed >= 60 && !interpreterReady) {
+      if (attempt >= 2) {
+        // Second attempt also failed — go straight to AI support
+        onOpenSupport();
+      } else {
+        setNoAnswer(true);
+      }
+    }
+  }, [elapsed, interpreterReady, attempt, onOpenSupport]);
 
   const fmt = (s: number) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
@@ -86,17 +97,18 @@ function WaitingState({
           </div>
           <h2 className="text-lg font-black text-slate-900">No interpreter available yet</h2>
           <p className="text-sm text-slate-500">
-            All interpreters for this language pair are currently busy or offline.
-            You can try again or wait — the request stays in the queue.
+            {attempt === 1
+              ? 'No interpreter answered on the first try. We will ring again — a second attempt often connects.'
+              : 'Still no answer. All interpreters may be busy. ORZO Support can help while you wait.'}
           </p>
-          <p className="text-xs text-slate-400">Waiting: <span className="font-mono font-bold">{fmt(elapsed)}</span></p>
+          <p className="text-xs text-slate-400">Waited: <span className="font-mono font-bold">{fmt(elapsed)}</span> · Attempt {attempt} of 2</p>
           <button
             type="button"
             onClick={onRetry}
             className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2"
           >
             <RefreshCw className="w-4 h-4" />
-            Try again
+            {attempt === 1 ? 'Try again (second attempt)' : 'Open ORZO Support'}
           </button>
         </div>
         <button
@@ -119,7 +131,7 @@ function WaitingState({
             <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500" />
           </span>
           <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
-            Ringing interpreters…
+            {attempt === 2 ? 'Second attempt — ringing interpreters…' : 'Ringing interpreters…'}
           </p>
           <span className="ml-auto font-mono text-sm font-black text-slate-700">{fmt(elapsed)}</span>
         </div>
@@ -178,6 +190,7 @@ interface TriageTerminalProps {
   onJoinSession: (sessionId: string) => void;
   onOpenFeedback: (sessionId: string) => void;
   initialSourceLanguage?: string | null;
+  onOpenSupport?: () => void;
 }
 
 export const TriageTerminal: React.FC<TriageTerminalProps> = ({
@@ -187,6 +200,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   onCreateRequest,
   onJoinSession,
   initialSourceLanguage,
+  onOpenSupport,
 }) => {
   const workplace = workplaceOf(currentUser);
   const [sourceLanguage, setSourceLanguage] = useState(initialSourceLanguage || 'orm');
@@ -196,6 +210,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calling, setCalling] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(1);
   const ringRef = useRef<{ stop: () => void } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -308,11 +323,11 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
             organizationName={currentUser.organizationName}
             languageName={languageName}
             onJoinSession={onJoinSession}
-            onBack={() => { stopOutgoingRing(ringRef); setCalling(false); }}
+            onBack={() => { stopOutgoingRing(ringRef); setCalling(false); setAttempt(1); }}
             onRetry={async () => {
               stopOutgoingRing(ringRef);
               setCalling(false);
-              // small delay so state resets before resubmit
+              setAttempt((a) => a + 1);
               await new Promise((r) => setTimeout(r, 100));
               setCalling(true);
               setIsSubmitting(true);
@@ -334,6 +349,8 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
                 setIsSubmitting(false);
               }
             }}
+            attempt={attempt}
+            onOpenSupport={() => { stopOutgoingRing(ringRef); setCalling(false); setAttempt(1); onOpenSupport?.(); }}
           />
         ) : (
         <form onSubmit={handleSubmit} className="space-y-5">

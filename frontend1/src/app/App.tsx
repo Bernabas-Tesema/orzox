@@ -178,6 +178,7 @@ export default function App() {
             onJoinSession={(sessionId) => portal.setActiveSessionRoomId(sessionId)}
             onOpenFeedback={(sessionId) => portal.setFeedbackModalSessionId(sessionId)}
             initialSourceLanguage={portal.preselectedSourceLanguage}
+            onOpenSupport={() => portal.openSupport(false)}
           />
         </main>
       )}

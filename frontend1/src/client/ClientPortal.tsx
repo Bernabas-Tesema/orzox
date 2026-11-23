@@ -43,6 +43,7 @@ interface ClientPortalProps {
   onJoinSession: (sessionId: string) => void;
   onOpenFeedback: (sessionId: string) => void;
   initialSourceLanguage?: string | null;
+  onOpenSupport?: () => void;
 }
 
 export const ClientPortal: React.FC<ClientPortalProps> = ({
@@ -54,6 +55,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
   onJoinSession,
   onOpenFeedback,
   initialSourceLanguage,
+  onOpenSupport,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -227,6 +229,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
           onJoinSession={onJoinSession}
           onOpenFeedback={onOpenFeedback}
           initialSourceLanguage={initialSourceLanguage}
+          onOpenSupport={onOpenSupport}
         />
       </div>
     );
