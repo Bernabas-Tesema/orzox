@@ -2022,9 +2022,70 @@ router.get('/waiting-calls', (req: Request, res: Response) => {
 router.post('/waiting-calls/:reference/take', (req: Request, res: Response) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  if (user.role !== 'interpreter') return res.status(403).json({ error: 'Only interpreters can take waiting calls.' });
+
   const request = db.requests.find((r) => r.reference === req.params.reference);
   if (!request) return res.status(404).json({ error: 'Request not found.' });
-  res.json({ success: true, message: 'Call taken.' });
+  if (!['submitted', 'pending_matching', 'assigned'].includes(request.status)) {
+    return res.status(400).json({ error: 'This call is no longer available.' });
+  }
+
+  const interp = db.interpreters.find((i) => i.userId === user.id);
+  if (!interp) return res.status(400).json({ error: 'No interpreter profile found.' });
+
+  // Create assignment
+  const assignment: Assignment = {
+    id: `asg-take-${Date.now()}`,
+    requestReference: request.reference,
+    interpreterId: interp.id,
+    interpreterName: interp.fullName,
+    assignedAt: new Date().toISOString(),
+    expiresAt: new Date(Date.now() + 120 * 1000).toISOString(),
+    outcome: 'accepted',
+  };
+  db.assignments.push(assignment);
+
+  // Create or reuse session
+  let session = db.sessions.find((s) => s.requestReference === request.reference);
+  if (!session) {
+    session = {
+      id: `SES-${Date.now().toString().slice(-4)}`,
+      requestReference: request.reference,
+      sessionToken: `SES-TOKEN-${Math.random().toString(36).substring(2, 10)}`,
+      status: 'active',
+      communicationMode: request.modality,
+      lowBandwidthMode: db.settings.telecomLowBandwidthPreset,
+      recordingEnabled: false,
+      durationSeconds: 0,
+      interpreterId: interp.id,
+      interpreterName: interp.fullName,
+      clientId: request.requesterId,
+      clientName: request.requesterName,
+      organizationName: request.organizationName,
+      sourceLanguage: request.sourceLanguage,
+      targetLanguage: request.targetLanguage,
+      serviceCategory: request.serviceCategory,
+      connectionHealth: 'optimal',
+      authorizedParticipantIds: [request.requesterId, user.id],
+    };
+    db.sessions.push(session);
+  } else {
+    session.interpreterId = interp.id;
+    session.interpreterName = interp.fullName;
+    session.status = 'active';
+    session.authorizedParticipantIds = [request.requesterId, user.id];
+  }
+
+  request.status = 'in_session';
+  request.assignedInterpreterId = interp.id;
+  request.assignedInterpreterName = interp.fullName;
+  request.activeSessionId = session.id;
+  request.updatedAt = new Date().toISOString();
+  interp.activeSessionId = session.id;
+  interp.availability = 'busy';
+
+  schedulePortalPersist();
+  res.json({ success: true, session, assignment, message: 'Call taken.' });
 });
 
 export default router;

@@ -206,10 +206,14 @@ export default function App() {
           onCallFinished={(sessionId) => {
             portal.setActiveSessionRoomId(null);
             if (currentUser.role === 'client') portal.setFeedbackModalSessionId(sessionId);
+            // If interpreter has a pending assignment waiting, refresh so the ring shows immediately
+            if (currentUser.role === 'interpreter') portal.refreshData();
           }}
           onOpenCompletionModal={(sessionId) => {
             portal.setActiveSessionRoomId(null);
             portal.setCompletionModalSessionId(sessionId);
+            // Refresh so any pending assignment ring appears right away
+            if (currentUser.role === 'interpreter') portal.refreshData();
           }}
           onTakeWaitingCall={portal.handleTakeWaitingCall}
         />
@@ -261,7 +265,52 @@ export default function App() {
         onSelectLanguageForRequest={(langCode) => portal.setPreselectedSourceLanguage(langCode)}
       />
 
-      {/* Meeting invitation toast — staff must click to join (no auto-open) */}
+      {/* Interpreter ring overlay — shows fullscreen when a call comes in and no session is active */}
+      {currentUser.role === 'interpreter' && !portal.activeSessionRoomId && (() => {
+        const pending = portal.assignments.find((a) => a.outcome === 'pending');
+        if (!pending) return null;
+        const req = portal.requests.find((r) => r.reference === pending.requestReference);
+        const lang = (code: string) => portal.languages.find((l) => l.code === code)?.name || code.toUpperCase();
+        const secondsLeft = Math.max(0, Math.ceil((new Date(pending.expiresAt).getTime() - Date.now()) / 1000));
+        return (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
+            <div className="w-full max-w-md mx-4 rounded-3xl border border-amber-400/30 bg-gradient-to-b from-slate-900 to-slate-950 p-8 text-white shadow-2xl space-y-6 text-center">
+              <div className="flex items-center justify-center gap-2">
+                <span className="animate-pulse text-amber-300 text-4xl">📞</span>
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-widest text-amber-300 mb-2">Incoming Request</p>
+                <p className="text-5xl font-black tabular-nums text-amber-200">{secondsLeft}</p>
+                <p className="text-xs text-white/60 mt-1">seconds to answer</p>
+              </div>
+              {req && (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left space-y-1">
+                  <p className="font-bold text-sm">{lang(req.sourceLanguage)} → {lang(req.targetLanguage)}</p>
+                  <p className="text-xs text-white/70 capitalize">{req.serviceCategory.replace(/_/g, ' ')} · {req.urgency}</p>
+                  <p className="text-xs text-white/60">{req.organizationName}</p>
+                  {req.minRoutingContext && <p className="text-xs text-white/50">{req.minRoutingContext}</p>}
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => portal.handleRespondAssignment(pending.id, 'rejected')}
+                  className="h-12 rounded-xl border border-white/20 bg-white/5 text-white text-sm font-bold hover:bg-white/10 cursor-pointer"
+                >
+                  Decline
+                </button>
+                <button
+                  onClick={() => portal.handleRespondAssignment(pending.id, 'accepted')}
+                  className="h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-extrabold cursor-pointer"
+                >
+                  Accept
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+
       {portal.pendingMeetingInviteId && !portal.activeMeetingId && (() => {
         const invite = portal.meetings.find((m) => m.id === portal.pendingMeetingInviteId);
         if (!invite || !currentUser) return null;

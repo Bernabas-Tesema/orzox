@@ -69,9 +69,10 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Keep both sides synchronized: when any participant ends the meeting,
-  // the peer UI disconnects as soon as the meeting status is updated.
+  // Keep both sides synchronized: when the HOST ends the meeting,
+  // all peers disconnect as soon as the meeting status is updated.
   useEffect(() => {
+    if (meeting.creatorId === currentUser.id) return; // host controls their own close
     let stopped = false;
     const watch = async () => {
       try {
@@ -90,7 +91,7 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
       stopped = true;
       window.clearInterval(timer);
     };
-  }, [meeting.id, onClose]);
+  }, [meeting.id, meeting.creatorId, currentUser.id, onClose]);
 
   const formatTimer = (s: number) => {
     const m = Math.floor(s / 60);
@@ -371,18 +372,19 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
     if (endingMeeting) return;
     setEndingMeeting(true);
 
-    // Disconnect media immediately so the user's mic/camera stops right away.
     try { roomRef.current?.disconnect(); } catch { /* ignore */ }
     try { localStreamRef.current?.getTracks().forEach((t) => t.stop()); } catch { /* ignore */ }
 
-    // Any participant may end the shared meeting. The status watcher closes
-    // every peer's room, not just the participant who pressed the button.
-    try {
-      await onEnd(meeting.id);
-    } catch (err: any) {
-      console.warn('End-meeting API call failed (will reconcile on next poll):', err?.message ?? err);
+    const isHost = meeting.creatorId === currentUser.id;
+    if (isHost) {
+      // Host ends the meeting for everyone — status watcher closes all peers.
+      try {
+        await onEnd(meeting.id);
+      } catch (err: any) {
+        console.warn('End-meeting API call failed:', err?.message ?? err);
+      }
     }
-
+    // Non-hosts just disconnect locally — the meeting continues for others.
     onClose();
   };
 
@@ -536,8 +538,8 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
           <PhoneOff className="w-4 h-4" />
           <span>
             {endingMeeting
-              ? 'Leaving...'
-              : 'End Meeting'}
+              ? (meeting.creatorId === currentUser.id ? 'Ending...' : 'Leaving...')
+              : (meeting.creatorId === currentUser.id ? 'End Meeting' : 'Leave Meeting')}
           </span>
         </button>
       </div>
