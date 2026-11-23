@@ -476,8 +476,9 @@ async function persistPortalDatabase(existing?: pg.PoolClient) {
         `INSERT INTO api_interpretationsession (
            id, request_reference, session_token, status, communication_mode, low_bandwidth_mode,
            recording_enabled, duration_seconds, interpreter_name, client_name, organization_name,
-           source_language, target_language, service_category, connection_health
-         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+           source_language, target_language, service_category, connection_health,
+           authorized_participant_ids
+         ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16::jsonb)
          ON CONFLICT (id) DO UPDATE SET
            status = EXCLUDED.status,
            communication_mode = EXCLUDED.communication_mode,
@@ -489,7 +490,8 @@ async function persistPortalDatabase(existing?: pg.PoolClient) {
            source_language = EXCLUDED.source_language,
            target_language = EXCLUDED.target_language,
            service_category = EXCLUDED.service_category,
-           connection_health = EXCLUDED.connection_health`,
+           connection_health = EXCLUDED.connection_health,
+           authorized_participant_ids = EXCLUDED.authorized_participant_ids`,
         [
           session.id,
           session.requestReference,
@@ -506,6 +508,7 @@ async function persistPortalDatabase(existing?: pg.PoolClient) {
           session.targetLanguage,
           session.serviceCategory,
           session.connectionHealth,
+          JSON.stringify(session.authorizedParticipantIds || []),
         ],
       );
     }
