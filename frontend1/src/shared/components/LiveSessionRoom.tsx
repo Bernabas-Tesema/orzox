@@ -630,196 +630,109 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
       )}
 
-      {/* Main Workspace Body */}
+      {/* Main Workspace Body — video area left, waiting calls panel right */}
       <div className="flex-1 flex overflow-hidden z-10">
-        {/* Left: Video area */}
-        <div className="flex-1 flex flex-col min-h-0">
-          <div className="flex-1 p-2 sm:p-4 lg:p-5 flex flex-col justify-between min-h-0">
-            <div className="flex-1 grid grid-cols-2 gap-3 sm:gap-4 items-stretch min-h-0">
-              {/* Box 1: Local (You) */}
-              <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-xl min-h-40 sm:min-h-56 md:min-h-64">
-              {/* Always render video element so ref is available for track attachment */}
-              <div className="absolute inset-0 w-full h-full">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className="w-full h-full object-cover transform -scale-x-100"
-                />
-              </div>
 
-              {/* Placeholder overlay when camera off */}
+        {/* Left: Video + Controls */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          {/* Video Grid */}
+          <div className="flex-1 grid grid-cols-2 gap-3 p-3 sm:p-4 min-h-0">
+
+            {/* Box 1: Local (You) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
+              <div className="absolute inset-0">
+                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
+              </div>
               {isVideoOff && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3 z-10">
-                  <div className="w-24 h-24 rounded-3xl bg-cyan-950/60 text-cyan-300 flex items-center justify-center text-3xl font-black border border-cyan-700/50 shadow-inner backdrop-blur-md">
-                    <UserIcon className="w-12 h-12" />
-                    {!isMuted && audioLevel > 5 && (
-                      <span
-                        className="absolute inset-0 rounded-3xl border-2 border-emerald-400 animate-ping opacity-75"
-                        style={{ animationDuration: '1.2s' }}
-                      />
-                    )}
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
+                  <div className="w-20 h-20 rounded-2xl bg-cyan-950/80 border border-cyan-700/50 flex items-center justify-center">
+                    <UserIcon className="w-10 h-10 text-cyan-300" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-                    {isMuted ? (
-                      <span className="text-red-400">Microphone Muted</span>
-                    ) : (
-                      <>
-                        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span>Camera Off</span>
-                      </>
-                    )}
+                  <span className="text-xs font-semibold text-slate-300">
+                    {isMuted ? <span className="text-red-400">Muted</span> : 'Camera Off'}
                   </span>
                 </div>
               )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-
-              {/* Local Participant Tag */}
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-2 border border-white/10 z-10">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 z-10">
                 <span className={`w-2 h-2 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
-                <span>
-                  {currentUser.fullName} ({currentUser.role === 'interpreter' ? 'Interpreter' : 'Requester'})
-                </span>
-                {isMuted && <MicOff className="w-3.5 h-3.5 text-red-400 ml-1" />}
+                <span>{currentUser.fullName} ({currentUser.role === 'interpreter' ? 'Interpreter' : 'You'})</span>
+                {isMuted && <MicOff className="w-3 h-3 text-red-400" />}
               </div>
             </div>
 
-            {/* Box 2: Remote Participant Feed (Interpreter or Client) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-xl min-h-40 sm:min-h-56 md:min-h-64">
-              {/* Always render video element so ref is available for track attachment */}
-              <div className="absolute inset-0 w-full h-full">
-                <video
-                  ref={remoteVideoRef}
-                  autoPlay
-                  playsInline
-                  className="w-full h-full object-cover"
-                />
+            {/* Box 2: Remote */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
+              <div className="absolute inset-0">
+                <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
               </div>
-
-              {/* Audio wave placeholder â€” shown only when no remote video */}
               {!hasRemoteVideo && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3.5 z-10">
-                  <div className="w-24 h-24 rounded-3xl bg-blue-950/60 text-blue-300 flex items-center justify-center text-3xl font-black border border-blue-700/50 shadow-inner backdrop-blur-md">
-                    <Volume2 className="w-12 h-12" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
+                  <div className="w-20 h-20 rounded-2xl bg-blue-950/80 border border-blue-700/50 flex items-center justify-center">
+                    <Volume2 className="w-10 h-10 text-blue-300" />
                   </div>
-
-                  {/* Remote Voice Indicator */}
-                  <div className="flex items-center space-x-1 h-8">
-                    {[1, 2, 3, 4, 5, 6, 7].map((bar) => (
-                      <span
-                        key={bar}
-                        className="w-1.5 bg-cyan-400 rounded-full animate-bounce"
-                        style={{
-                          height: `${14 + (bar % 4) * 5}px`,
-                          animationDelay: `${bar * 0.12}s`,
-                          animationDuration: '1s',
-                        }}
-                      />
+                  <div className="flex items-end gap-0.5 h-6">
+                    {[0.4,0.7,1.0,0.6,0.8,0.5,0.9].map((h, i) => (
+                      <span key={i} className="w-1 rounded-full bg-cyan-400 animate-bounce" style={{ height: `${Math.round(h*20)}px`, animationDelay: `${i*0.1}s`, animationDuration: '0.9s' }} />
                     ))}
                   </div>
                   <span className="text-xs font-semibold text-cyan-300 flex items-center gap-1.5">
                     <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    <span>Interpretation Channel Live</span>
+                    Live Audio
                   </span>
                 </div>
               )}
-
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none" />
-
-              {/* Remote Participant Tag */}
-              <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center space-x-2 border border-white/10 z-10">
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 z-10">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                <span>
-                  {remoteParticipantName || session.interpreterName || 'Assigned Certified Interpreter'}
-                </span>
-                {remoteIsMuted && (
-                  <span className="flex items-center gap-1 text-red-400 ml-1">
-                    <MicOff className="w-3.5 h-3.5" />
-                    <span className="text-[10px] font-bold">Muted</span>
-                  </span>
-                )}
+                <span>{remoteParticipantName || session.interpreterName || 'Interpreter'}</span>
+                {remoteIsMuted && <MicOff className="w-3 h-3 text-red-400" />}
               </div>
             </div>
           </div>
 
-          {/* Speakerphone Banner for Assisted Calls */}
+          {/* Speakerphone banner */}
           {session.communicationMode === 'phone_assisted' && (
-            <div className="max-w-xl mx-auto w-full my-3 p-3 bg-slate-950/50 backdrop-blur-xl border border-cyan-500/30 text-cyan-200 text-xs rounded-2xl flex items-center space-x-2">
+            <div className="mx-3 mb-2 p-2.5 bg-slate-950/50 border border-cyan-500/30 text-cyan-200 text-xs rounded-xl flex items-center gap-2">
               <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
-              <span>
-                <strong>Speakerphone Mode:</strong> Active on terminal speakerphone.
-              </span>
+              <span><strong>Speakerphone Mode</strong> — Active on terminal speakerphone.</span>
             </div>
           )}
 
-          {/* Bottom Control Bar */}
-          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 max-w-xl mx-auto w-full rounded-2xl p-2 sm:p-3 flex items-center justify-between gap-2 shadow-xl mt-2 sm:mt-3">
-            {/* Microphone Toggle */}
-            <button
-              onClick={handleToggleMute}
-              className={`p-3 rounded-xl transition-all cursor-pointer ${
-                isMuted
-                  ? 'bg-red-600 hover:bg-red-500 text-white shadow-lg shadow-red-600/30'
-                  : 'bg-white/10 hover:bg-white/20 text-slate-100 border border-white/10'
-              }`}
-              title={isMuted ? 'Unmute microphone' : 'Mute microphone'}
-            >
-              {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
-            </button>
-
-            {/* Video Toggle (Always clickable to enable or disable camera) */}
-            <button
-              onClick={handleToggleVideo}
-              className={`p-3 rounded-xl transition-all cursor-pointer ${
-                isVideoOff
-                  ? 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10'
-                  : 'bg-emerald-600/80 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-600/30 border border-emerald-400/40'
-              }`}
-              title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}
-            >
-              {isVideoOff ? <VideoOff className="w-5 h-5" /> : <VideoIcon className="w-5 h-5" />}
-            </button>
-
-            {/* Low-Bandwidth Mode */}
-            <button
-              onClick={() => setIsLowBandwidth(!isLowBandwidth)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center space-x-1.5 ${
-                isLowBandwidth
-                  ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50'
-                  : 'bg-white/10 text-slate-200 hover:bg-white/20 border border-white/10'
-              }`}
-              title="Toggle low-bandwidth optimization"
-            >
-              <Wifi className="w-4 h-4 text-cyan-400" />
-              <span className="hidden sm:inline">Low-Bandwidth</span>
-            </button>
-
-            {/* End Call Button */}
-            <button
-              onClick={handleEndCall}
-              disabled={endingCall}
-              className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg transition-transform hover:scale-105 cursor-pointer flex items-center space-x-1.5 border border-red-500/40"
-            >
-              <PhoneOff className="w-4 h-4" />
-              <span>{endingCall ? 'Ending...' : 'End Call'}</span>
-            </button>
+          {/* Control Bar */}
+          <div className="flex-shrink-0 p-3 pb-4">
+            <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 flex items-center justify-center gap-4 shadow-xl max-w-lg mx-auto">
+              <button onClick={handleToggleMute} className={`p-3 rounded-xl cursor-pointer transition-all ${isMuted ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-slate-100 border border-white/10'}`} title={isMuted ? 'Unmute' : 'Mute'}>
+                {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+              </button>
+              <button onClick={handleToggleVideo} className={`p-3 rounded-xl cursor-pointer transition-all ${isVideoOff ? 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10' : 'bg-emerald-600/80 hover:bg-emerald-500 text-white border border-emerald-400/40'}`} title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
+                {isVideoOff ? <VideoOff className="w-5 h-5" /> : <VideoIcon className="w-5 h-5" />}
+              </button>
+              <button onClick={() => setIsLowBandwidth(!isLowBandwidth)} className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 ${isLowBandwidth ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50' : 'bg-white/10 text-slate-200 hover:bg-white/20 border border-white/10'}`}>
+                <Wifi className="w-4 h-4 text-cyan-400" />
+                <span className="hidden sm:inline">Low-Bandwidth</span>
+              </button>
+              <button onClick={handleEndCall} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
+                <PhoneOff className="w-4 h-4" />
+                <span>{endingCall ? 'Ending...' : 'End Call'}</span>
+              </button>
+            </div>
           </div>
         </div>
-        </div>
 
-        {/* Waiting Calls Panel (interpreters only) — only shown during active session */}
+        {/* Right: Calls Waiting Panel (interpreters only, hidden when ending) */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
-          <div className="w-72 bg-slate-900/98 border-l border-white/10 flex flex-col flex-shrink-0 overflow-hidden">
-            <div className="p-3 border-b border-white/10 flex-shrink-0">
+          <div className="w-72 flex-shrink-0 bg-[#0d1623] border-l border-white/10 flex flex-col overflow-hidden">
+            {/* Panel header */}
+            <div className="p-4 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-2">
-                <PhoneCall className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
-                <span className="text-[11px] font-bold text-white uppercase tracking-wider">Incoming ({waitingCalls.length})</span>
+                <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span className="text-sm font-black text-white uppercase tracking-wide">Calls Waiting ({waitingCalls.length})</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">Pick a call -- current session ends first.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Pick a call below -- your current call ends first.</p>
             </div>
-            <div className="p-2 space-y-2 flex-1 overflow-y-auto">
+            {/* Cards */}
+            <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {waitingCalls.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
@@ -827,42 +740,52 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 if (secondsLeft !== null && secondsLeft === 0) return null;
                 const urgent = secondsLeft !== null && secondsLeft <= 10;
                 return (
-                  <div key={call.reference} className={`border rounded-xl p-2.5 space-y-1.5 ${urgent ? 'bg-red-950/60 border-red-500/60' : 'bg-white/5 border-white/10'}`}>
-                    <div className="flex items-center justify-between gap-1">
-                      <span className="text-[10px] font-mono text-cyan-300 font-bold truncate">{call.reference}</span>
+                  <div key={call.reference} className={`rounded-xl border p-3 space-y-2 ${urgent ? 'bg-red-950/50 border-red-500/50' : 'bg-slate-800/80 border-slate-700/50'}`}>
+                    {/* Ref + badge */}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs text-slate-300 font-bold">{call.reference}</span>
                       {secondsLeft !== null ? (
-                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
+                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
                       ) : (
-                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-bold flex-shrink-0">Queue</span>
+                        <span className="text-[10px] bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded font-bold">Queued</span>
                       )}
                     </div>
+                    {/* Caller name */}
+                    <p className="font-bold text-white text-sm leading-tight truncate">{call.requesterName}</p>
+                    {/* Org */}
+                    <p className="text-[11px] text-slate-400 truncate">{call.organizationName}</p>
+                    {/* Languages + urgency */}
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-black text-white">{call.sourceLanguage?.toUpperCase()}</span>
+                      <span className="text-slate-500 text-xs">-</span>
+                      <span className="text-xs font-black text-white">{call.targetLanguage?.toUpperCase()}</span>
+                      {call.urgency === 'emergency' && (
+                        <span className="ml-auto text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Emergency</span>
+                      )}
+                    </div>
+                    {/* Category */}
+                    <p className="text-[11px] text-slate-500 capitalize">{call.serviceCategory?.replace(/_/g, ' ')}</p>
+                    {/* Countdown bar */}
                     {expiresAt > 0 && secondsLeft !== null && (
                       <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
-                        <div className={`h-1 rounded-full ${urgent ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }} />
+                        <div className={`h-1 rounded-full transition-all ${urgent ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }} />
                       </div>
                     )}
-                    <div className="text-[11px] space-y-0.5">
-                      <div className="font-bold text-white truncate">{call.requesterName}</div>
-                      <div className="text-slate-400 truncate text-[10px]">{call.organizationName}</div>
-                      <div className="flex items-center gap-1">
-                        <span className="font-bold text-cyan-200 text-[10px]">{call.sourceLanguage?.toUpperCase()}</span>
-                        <span className="text-slate-500 text-[10px]">to</span>
-                        <span className="font-bold text-cyan-200 text-[10px]">{call.targetLanguage?.toUpperCase()}</span>
-                        {call.urgency === 'emergency' && <span className="text-[9px] bg-red-500/40 text-red-200 px-1 py-0.5 rounded font-bold uppercase ml-auto">SOS</span>}
-                      </div>
-                    </div>
+                    {/* Take Call button */}
                     <button
                       onClick={() => handleTakeCall(call.reference)}
                       disabled={takingCall === call.reference}
-                      className={`w-full py-1.5 rounded-lg text-white text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1 ${urgent ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50`}
+                      className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
                     >
-                      {takingCall === call.reference ? 'Connecting...' : <><PhoneCall className="w-3 h-3" />Take Call</>}
+                      <PhoneCall className="w-3.5 h-3.5" />
+                      {takingCall === call.reference ? 'Connecting...' : 'Take Call'}
                     </button>
                   </div>
                 );
               })}
             </div>
           </div>
+        )}
         )}
 
         {/* Sidebar Glossary */}
