@@ -278,23 +278,20 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   const phoneRinging = showCalling && !interpreterReady && !isSubmitting;
   const languageName = (code?: string) => languages.find((item) => item.code === code)?.name || (code ? code.toUpperCase() : 'Unknown language');
 
+  // Go back to form only when the active request fully disappears (completed/cancelled/expired)
+  // OR when the session starts (in_session — the auto-join in usePortal will open the room).
   useEffect(() => {
-    if (!calling || isSubmitting) return;
-    const stillWaiting = requests.some(
-      (item) =>
-        item.requesterId === currentUser.id &&
-        ['submitted', 'validating', 'matching', 'assigned', 'pending_matching'].includes(item.status),
-    );
-    const sessionDone = requests.some(
-      (item) =>
-        item.requesterId === currentUser.id &&
-        ['completed', 'cancelled', 'expired', 'unresolved'].includes(item.status),
-    );
-    if (!stillWaiting || sessionDone) {
+    if (!showCalling || isSubmitting) return;
+    const request = requests.find((item) => item.requesterId === currentUser.id &&
+      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching',
+       'completed', 'cancelled', 'expired', 'unresolved', 'in_session'].includes(item.status));
+    if (!request) return; // no request at all yet — keep showing
+    if (['completed', 'cancelled', 'expired', 'unresolved'].includes(request.status)) {
       setCalling(false);
       setAttempt(1);
     }
-  }, [calling, currentUser.id, isSubmitting, requests]);
+    // in_session is handled by auto-join in usePortal — LiveSessionRoom opens on top
+  }, [showCalling, currentUser.id, isSubmitting, requests]);
 
   useEffect(() => {
     if (!phoneRinging) {

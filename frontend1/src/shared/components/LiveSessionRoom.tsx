@@ -106,9 +106,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Poll waiting calls (interpreters only) — shows queued calls in the sidebar
+  // Poll waiting calls (interpreters only) — shows queued calls in the sidebar.
+  // Poll every 2 seconds so new calls appear quickly during an active session.
   useEffect(() => {
-    if (currentUser.role !== 'interpreter' || !onTakeWaitingCall) return;
+    if (currentUser.role !== 'interpreter') return;
     const fetchWaiting = async () => {
       try {
         const res = await api.getWaitingCalls();
@@ -118,9 +119,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       }
     };
     fetchWaiting();
-    const timer = setInterval(fetchWaiting, 5000);
+    const timer = setInterval(fetchWaiting, 2000);
     return () => clearInterval(timer);
-  }, [currentUser.role, onTakeWaitingCall]);
+  }, [currentUser.role]);
 
   const handleTakeCall = async (reference: string) => {
     setTakingCall(reference);
