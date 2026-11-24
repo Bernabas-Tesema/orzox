@@ -629,12 +629,12 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       )}
 
       {/* Main Workspace Body */}
-      <div className="flex-1 relative flex overflow-hidden z-10">
+      <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden z-10">
         {/* Call Viewport Grid */}
-        <div className="flex-1 bg-transparent p-4 sm:p-6 flex flex-col justify-between">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-5 items-center max-w-5xl mx-auto w-full">
+        <div className="flex-1 bg-transparent p-2 sm:p-4 lg:p-6 flex flex-col justify-between min-h-0">
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5 items-center max-w-5xl mx-auto w-full min-h-0">
             {/* Box 1: Local Participant Feed (Requester / You) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-72 sm:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -684,7 +684,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
 
             {/* Box 2: Remote Participant Feed (Interpreter or Client) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-72 sm:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -752,7 +752,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           )}
 
           {/* Bottom Control Bar */}
-          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 max-w-xl mx-auto w-full rounded-2xl p-3 flex items-center justify-between shadow-xl">
+          <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 max-w-xl mx-auto w-full rounded-2xl p-2 sm:p-3 flex items-center justify-between gap-2 shadow-xl mt-2 sm:mt-3">
             {/* Microphone Toggle */}
             <button
               onClick={handleToggleMute}
@@ -807,7 +807,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
 
         {/* Waiting Calls Sidebar (interpreters only) */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
-          <div className="w-72 bg-slate-900/95 backdrop-blur-md border-l border-white/10 overflow-y-auto flex-shrink-0 z-20">
+          <div className="w-full md:w-72 max-h-48 md:max-h-none bg-slate-900/95 backdrop-blur-md border-t md:border-t-0 md:border-l border-white/10 overflow-y-auto flex-shrink-0 z-20">
             <div className="p-4 border-b border-white/10">
               <div className="flex items-center space-x-2">
                 <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />

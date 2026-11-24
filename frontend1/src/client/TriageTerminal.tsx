@@ -63,26 +63,26 @@ function WaitingState({
 
   if (interpreterReady && ringingRequest?.activeSessionId) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-5 text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-full bg-emerald-100 flex items-center justify-center">
-            <Check className="w-7 h-7 text-emerald-600" />
+      <div className="space-y-4 text-white">
+        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/60 px-5 py-6 text-center space-y-3 backdrop-blur-md">
+          <div className="mx-auto w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center">
+            <Check className="w-8 h-8 text-emerald-300" />
           </div>
-          <h2 className="text-lg font-black text-slate-900">Interpreter ready</h2>
-          <p className="text-sm text-slate-500">Your interpreter accepted the request and is waiting in the room.</p>
+          <h2 className="text-xl font-black text-white">Interpreter ready</h2>
+          <p className="text-sm text-emerald-200">Your interpreter accepted the request and is waiting in the room.</p>
           <button
             type="button"
             onClick={() => onJoinSession(ringingRequest.activeSessionId!)}
-            className="w-full h-13 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2"
+            className="w-full h-13 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2 mt-2"
           >
             {callMode === 'video' ? <Video className="w-4 h-4" /> : <PhoneCall className="w-4 h-4" />}
             Join {callMode === 'video' ? 'video' : 'audio'} call
           </button>
         </div>
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 space-y-1">
-          <p><span className="font-bold text-slate-700">Ref:</span> {ringingRequest.reference}</p>
-          <p><span className="font-bold text-slate-700">Languages:</span> {languageName(ringingRequest.sourceLanguage)} → {languageName(ringingRequest.targetLanguage)}</p>
-          <p><span className="font-bold text-slate-700">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
+        <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 text-xs text-slate-400 space-y-1">
+          <p><span className="font-bold text-slate-200">Ref:</span> {ringingRequest.reference}</p>
+          <p><span className="font-bold text-slate-200">Languages:</span> {languageName(ringingRequest.sourceLanguage)} → {languageName(ringingRequest.targetLanguage)}</p>
+          <p><span className="font-bold text-slate-200">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
         </div>
       </div>
     );
@@ -90,22 +90,22 @@ function WaitingState({
 
   if (noAnswer) {
     return (
-      <div className="space-y-4">
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-5 text-center space-y-3">
-          <div className="mx-auto w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
-            <AlertCircle className="w-7 h-7 text-amber-600" />
+      <div className="space-y-4 text-white">
+        <div className="rounded-2xl border border-amber-500/40 bg-amber-950/60 px-5 py-6 text-center space-y-3 backdrop-blur-md">
+          <div className="mx-auto w-16 h-16 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-amber-300" />
           </div>
-          <h2 className="text-lg font-black text-slate-900">No interpreter available yet</h2>
-          <p className="text-sm text-slate-500">
+          <h2 className="text-xl font-black text-white">No interpreter available yet</h2>
+          <p className="text-sm text-amber-200">
             {attempt === 1
               ? 'No interpreter answered on the first try. We will ring again — a second attempt often connects.'
-              : 'Still no answer. All interpreters may be busy. ORZO Support can help while you wait.'}
+              : 'Still no answer. ORZO Support can help while you wait.'}
           </p>
-          <p className="text-xs text-slate-400">Waited: <span className="font-mono font-bold">{fmt(elapsed)}</span> · Attempt {attempt} of 2</p>
+          <p className="text-xs text-slate-400">Waited: <span className="font-mono font-bold text-white">{fmt(elapsed)}</span> · Attempt {attempt} of 2</p>
           <button
             type="button"
             onClick={onRetry}
-            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2"
+            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2 mt-2"
           >
             <RefreshCw className="w-4 h-4" />
             {attempt === 1 ? 'Try again (second attempt)' : 'Open ORZO Support'}
@@ -114,7 +114,7 @@ function WaitingState({
         <button
           type="button"
           onClick={onBack}
-          className="w-full h-11 rounded-xl border border-slate-300 bg-white text-slate-600 text-xs font-bold cursor-pointer hover:bg-slate-50"
+          className="w-full h-11 rounded-xl border border-white/20 bg-white/5 text-slate-300 text-xs font-bold cursor-pointer hover:bg-white/10"
         >
           Back to form
         </button>
@@ -123,46 +123,46 @@ function WaitingState({
   }
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-5">
+    <div className="space-y-4 text-white">
+      <div className="rounded-2xl border border-blue-500/30 bg-slate-900/80 px-5 py-6 backdrop-blur-md">
         <div className="flex items-center gap-3">
           <span className="relative flex h-3 w-3 shrink-0">
             <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60 animate-ping" style={{ animationDuration: '1.5s' }} />
             <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500" />
           </span>
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-700">
+          <p className="text-xs font-bold uppercase tracking-wider text-blue-300">
             {attempt === 2 ? 'Second attempt — ringing interpreters…' : 'Ringing interpreters…'}
           </p>
-          <span className="ml-auto font-mono text-sm font-black text-slate-700">{fmt(elapsed)}</span>
+          <span className="ml-auto font-mono text-sm font-black text-white">{fmt(elapsed)}</span>
         </div>
-        <h2 className="mt-3 text-lg font-black text-slate-900 leading-snug">
+        <h2 className="mt-4 text-xl font-black text-white leading-snug">
           Locating an available interpreter
         </h2>
-        <p className="mt-1.5 text-sm text-slate-500 leading-relaxed">
+        <p className="mt-1.5 text-sm text-slate-300 leading-relaxed">
           Please stay on this screen. Interpreters are being notified now.
         </p>
         {/* Animated ring bars */}
-        <div className="mt-4 flex items-end justify-center gap-1 h-8">
-          {[0.3,0.6,1.0,0.7,0.4,0.8,0.5].map((h, i) => (
+        <div className="mt-5 flex items-end justify-center gap-1.5 h-10">
+          {[0.3,0.6,1.0,0.7,0.4,0.9,0.5,0.8,0.3].map((h, i) => (
             <span
               key={i}
-              className="w-1.5 rounded-full bg-blue-400 animate-bounce"
-              style={{ height: `${Math.round(h * 28)}px`, animationDelay: `${i * 0.1}s`, animationDuration: '0.9s' }}
+              className="w-2 rounded-full bg-blue-400/80 animate-bounce"
+              style={{ height: `${Math.round(h * 36)}px`, animationDelay: `${i * 0.08}s`, animationDuration: '0.9s' }}
             />
           ))}
         </div>
       </div>
-      <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 space-y-1">
-        <p><span className="font-bold text-slate-700">Ref:</span> {ringingRequest?.reference || '—'}</p>
-        <p><span className="font-bold text-slate-700">Languages:</span> {languageName(sourceLanguage)} → {languageName(targetLanguage)}</p>
-        <p><span className="font-bold text-slate-700">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
+      <div className="rounded-2xl border border-white/10 bg-slate-900/50 p-4 text-xs text-slate-400 space-y-1">
+        <p><span className="font-bold text-slate-200">Ref:</span> {ringingRequest?.reference || '—'}</p>
+        <p><span className="font-bold text-slate-200">Languages:</span> {languageName(sourceLanguage)} → {languageName(targetLanguage)}</p>
+        <p><span className="font-bold text-slate-200">Mode:</span> {callMode === 'video' ? 'Video' : 'Audio'} · {organizationName}</p>
       </div>
       <button
         type="button"
         onClick={onBack}
-        className="w-full h-11 rounded-xl border border-slate-300 bg-white text-slate-600 text-xs font-bold cursor-pointer hover:bg-slate-50"
+        className="w-full h-11 rounded-xl border border-white/20 bg-white/5 text-slate-300 text-xs font-bold cursor-pointer hover:bg-white/10"
       >
-        Back to form
+        Cancel and go back
       </button>
     </div>
   );
@@ -294,19 +294,21 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   }, [phoneRinging]);
 
   return (
-    <div className="relative min-h-[calc(100vh-140px)] w-full flex items-center justify-center p-4 sm:p-8 overflow-hidden rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),transparent_35%),linear-gradient(135deg,#0f172a,#172554,#0f172a)] shadow-inner">
+    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-slate-950' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),transparent_35%),linear-gradient(135deg,#0f172a,#172554,#0f172a)] shadow-inner'}`}>
       {/* Triage Card */}
-      <div className="relative z-10 w-full max-w-lg rounded-[1.75rem] border border-white/70 bg-white/95 p-7 sm:p-10 text-slate-900 space-y-6 shadow-[0_24px_80px_rgba(15,23,42,0.38)] backdrop-blur-xl">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
-            Request an Interpreter
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
-            {currentUser.organizationName || 'Tikur Anbessa Specialized Hospital (Addis Ababa)'}
-          </p>
-        </div>
+      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-lg rounded-[1.75rem] border border-white/70 bg-white/95 p-7 sm:p-10 text-slate-900 space-y-6 shadow-[0_24px_80px_rgba(15,23,42,0.38)] backdrop-blur-xl'}`}>
+        {!showCalling && (
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              Request an Interpreter
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+              {currentUser.organizationName || 'Tikur Anbessa Specialized Hospital (Addis Ababa)'}
+            </p>
+          </div>
+        )}
 
-        {error && (
+        {error && !showCalling && (
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
             <span>{error}</span>
