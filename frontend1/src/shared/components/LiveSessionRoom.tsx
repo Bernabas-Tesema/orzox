@@ -57,7 +57,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [showTerminology, setShowTerminology] = useState(false);
   const [endingCall, setEndingCall] = useState(false);
 
-  // LiveKit Connection States (credentials come from server .env — no UI config)
+  // LiveKit Connection States (credentials come from server .env â€” no UI config)
   const [connectionState, setConnectionState] = useState<string>('initializing');
   const [connectionNotice, setConnectionNotice] = useState<string | null>(null);
 
@@ -69,7 +69,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [remoteIsMuted, setRemoteIsMuted] = useState<boolean>(false);
   const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
   const [takingCall, setTakingCall] = useState<string | null>(null);
-  // Live countdown ticker — increments every second to force sidebar re-renders
+  // Live countdown ticker â€” increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
 
   // DOM Refs
@@ -106,7 +106,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Poll waiting calls (interpreters only) — shows queued calls in the sidebar.
+  // Poll waiting calls (interpreters only) â€” shows queued calls in the sidebar.
   // Poll every 2 seconds so new calls appear quickly during an active session.
   useEffect(() => {
     if (currentUser.role !== 'interpreter') return;
@@ -195,7 +195,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     }
   };
 
-  // Eliotel-style join flow on LiveKit: authorize → token → connect shared room → publish
+  // Eliotel-style join flow on LiveKit: authorize â†’ token â†’ connect shared room â†’ publish
   useEffect(() => {
     let active = true;
 
@@ -204,7 +204,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         setConnectionState('connecting');
         setConnectionNotice('Joining secure interpretation room...');
 
-        // 1) Mark participant joined (session → active / request → in_session)
+        // 1) Mark participant joined (session â†’ active / request â†’ in_session)
         try {
           const token =
             session.sessionToken && !session.sessionToken.startsWith('SES-LIVE')
@@ -258,7 +258,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               remoteAudioRef.current.muted = false;
               remoteAudioRef.current.volume = 1;
               void remoteAudioRef.current.play().catch(() => {
-                // Browser autoplay policy blocked playback — user must click to enable.
+                // Browser autoplay policy blocked playback â€” user must click to enable.
                 setAudioBlocked(true);
               });
             } else {
@@ -355,7 +355,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         // Bind tracks already in the room (second joiner / reconnect).
         bindExistingRemoteTracks();
 
-        // 3) Publish local AV through LiveKit (single capture path — no double getUserMedia)
+        // 3) Publish local AV through LiveKit (single capture path â€” no double getUserMedia)
         try {
           if (isVideoMode) {
             await room.localParticipant.setMicrophoneEnabled(true);
@@ -434,7 +434,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     };
   }, [session.id]);
 
-  // Toggle Mute — LiveKit local participant is the source of truth
+  // Toggle Mute â€” LiveKit local participant is the source of truth
   const handleToggleMute = async () => {
     const nextMuted = !isMuted;
     setIsMuted(nextMuted);
@@ -447,7 +447,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     }
   };
 
-  // Toggle Video — publish/unpublish via LiveKit only.
+  // Toggle Video â€” publish/unpublish via LiveKit only.
   // Works in both audio and video modes so participants can turn on
   // their camera mid-call.
   const handleToggleVideo = async () => {
@@ -465,7 +465,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     }
   };
 
-  // Enable audio — called from a user click to satisfy browser autoplay policy
+  // Enable audio â€” called from a user click to satisfy browser autoplay policy
   const handleEnableAudio = async () => {
     try {
       if (remoteAudioRef.current) {
@@ -475,11 +475,11 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       }
       setAudioBlocked(false);
     } catch {
-      // Still blocked — user may need to click again
+      // Still blocked â€” user may need to click again
     }
   };
 
-  // End Call — disconnect media first, then notify backend.
+  // End Call â€” disconnect media first, then notify backend.
   // A network hiccup on the backend call must never strand the user in the room.
   const handleEndCall = async () => {
     if (endingCall) return;
@@ -499,7 +499,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     try {
       await onEndSession(session.id);
     } catch (err: any) {
-      // Log the error but do NOT block exit — the status-watcher poll will
+      // Log the error but do NOT block exit â€” the status-watcher poll will
       // eventually reconcile if the request reached the server.
       console.warn('End-session API call failed (session will be cleaned up by poll):', err?.message ?? err);
     }
@@ -516,10 +516,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.16),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#020617)] text-white flex flex-col overflow-hidden select-none">
-      {/* Remote Audio Track (Hidden) — must autoplay + playsInline for mobile/desktop */}
+      {/* Remote Audio Track (Hidden) â€” must autoplay + playsInline for mobile/desktop */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
-      {/* Audio enable overlay — browser autoplay policy requires a user gesture */}
+      {/* Audio enable overlay â€” browser autoplay policy requires a user gesture */}
       {audioBlocked && (
         <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
           <div className="text-center space-y-4 px-6">
@@ -568,9 +568,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              {session.organizationName} • {session.serviceCategory.replace('_', ' ').toUpperCase()} •{' '}
+              {session.organizationName} â€¢ {session.serviceCategory.replace('_', ' ').toUpperCase()} â€¢{' '}
               <strong className="text-cyan-300">
-                {session.sourceLanguage.toUpperCase()} ⇄ {session.targetLanguage.toUpperCase()}
+                {session.sourceLanguage.toUpperCase()} â‡„ {session.targetLanguage.toUpperCase()}
               </strong>
             </p>
           </div>
@@ -584,7 +584,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             <span className="font-bold text-cyan-300">{formatTimer(duration)}</span>
           </div>
 
-          {/* Connection status (read-only — LiveKit keys are server-side only) */}
+          {/* Connection status (read-only â€” LiveKit keys are server-side only) */}
           <div
             className={`hidden sm:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border backdrop-blur-md ${
               connectionState === 'connected'
@@ -598,7 +598,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               {connectionState === 'connected' ? (
                 <strong className="text-emerald-400">Live Connected</strong>
               ) : (
-                <span>Connecting…</span>
+                <span>Connectingâ€¦</span>
               )}
             </span>
           </div>
@@ -606,7 +606,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           {/* Security badge */}
           <div className="hidden md:flex items-center space-x-1.5 text-[11px] bg-slate-900/60 text-slate-400 border border-white/10 px-2.5 py-1 rounded-lg">
             <Shield className="w-3.5 h-3.5 text-slate-500" />
-            <span>Encrypted · No Recording</span>
+            <span>Encrypted Â· No Recording</span>
           </div>
 
           {/* Glossary */}
@@ -631,15 +631,11 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
 
       {/* Main Workspace Body */}
       <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden z-10">
-        {/* Call Viewport Grid — shrinks when waiting calls sidebar is visible */}
+        {/* Call Viewport Grid */}
         <div className="flex-1 bg-transparent p-2 sm:p-4 lg:p-6 flex flex-col justify-between min-h-0">
-          <div className={`flex-1 grid gap-3 sm:gap-5 items-center mx-auto w-full min-h-0 ${
-            currentUser.role === 'interpreter' && waitingCalls.length > 0
-              ? 'grid-cols-1 max-w-2xl'
-              : 'grid-cols-1 md:grid-cols-2 max-w-5xl'
-          }`}>
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5 items-center max-w-5xl mx-auto w-full min-h-0">
             {/* Box 1: Local Participant Feed (Requester / You) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-56 md:h-64 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -689,7 +685,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
 
             {/* Box 2: Remote Participant Feed (Interpreter or Client) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-56 md:h-64 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -700,7 +696,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 />
               </div>
 
-              {/* Audio wave placeholder — shown only when no remote video */}
+              {/* Audio wave placeholder â€” shown only when no remote video */}
               {!hasRemoteVideo && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center space-y-3.5 z-10">
                   <div className="w-24 h-24 rounded-3xl bg-blue-950/60 text-blue-300 flex items-center justify-center text-3xl font-black border border-blue-700/50 shadow-inner backdrop-blur-md">
@@ -810,7 +806,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Waiting Calls Overlay (interpreters only) � overlays the video area */}
+        {/* Waiting Calls Overlay (interpreters only) */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
           <div className="absolute top-0 right-0 h-full w-64 bg-slate-950/92 backdrop-blur-md border-l border-white/10 overflow-y-auto z-30 flex flex-col">
             <div className="p-3 border-b border-white/10 flex-shrink-0">
@@ -818,7 +814,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 <PhoneCall className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                 <span className="text-[11px] font-bold text-white uppercase tracking-wider">Incoming ({waitingCalls.length})</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-0.5">Pick a call � current session ends first.</p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Pick a call -- current session ends first.</p>
             </div>
             <div className="p-2 space-y-2 flex-1 overflow-y-auto">
               {waitingCalls.map((call) => {
@@ -847,7 +843,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                       <div className="text-slate-400 truncate text-[10px]">{call.organizationName}</div>
                       <div className="flex items-center gap-1">
                         <span className="font-bold text-cyan-200 text-[10px]">{call.sourceLanguage?.toUpperCase()}</span>
-                        <span className="text-slate-500 text-[10px]">?</span>
+                        <span className="text-slate-500 text-[10px]">to</span>
                         <span className="font-bold text-cyan-200 text-[10px]">{call.targetLanguage?.toUpperCase()}</span>
                         {call.urgency === 'emergency' && <span className="text-[9px] bg-red-500/40 text-red-200 px-1 py-0.5 rounded font-bold uppercase ml-auto">SOS</span>}
                       </div>
@@ -857,7 +853,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                       disabled={takingCall === call.reference}
                       className={`w-full py-1.5 rounded-lg text-white text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1 ${urgent ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50`}
                     >
-                      {takingCall === call.reference ? 'Connecting�' : <><PhoneCall className="w-3 h-3" />Take Call</>}
+                      {takingCall === call.reference ? 'Connecting...' : <><PhoneCall className="w-3 h-3" />Take Call</>}
                     </button>
                   </div>
                 );
@@ -887,20 +883,20 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
 
               <div className="mt-4 space-y-3">
                 <div className="p-2.5 bg-slate-800/80 rounded-lg text-xs">
-                  <div className="font-bold text-blue-400">Clinical Consent (የሕክምና ፈቃድ)</div>
+                  <div className="font-bold text-blue-400">Clinical Consent (á‹¨áˆ•áŠ­áˆáŠ“ áˆá‰ƒá‹µ)</div>
                   <div className="text-[11px] text-slate-300 mt-1">
-                    <strong>Amharic:</strong> የህክምና ስምምነት መስጠት
+                    <strong>Amharic:</strong> á‹¨áˆ…áŠ­áˆáŠ“ áˆµáˆáˆáŠá‰µ áˆ˜áˆµáŒ á‰µ
                     <br />
                     <strong>Oromo:</strong> Hayyama yaalaa kennuu
                     <br />
-                    <strong>Tigrinya:</strong> ስምምዕ ሕክምና ምሃብ
+                    <strong>Tigrinya:</strong> áˆµáˆáˆá‹• áˆ•áŠ­áˆáŠ“ áˆáˆƒá‰¥
                   </div>
                 </div>
 
                 <div className="p-2.5 bg-slate-800/80 rounded-lg text-xs">
-                  <div className="font-bold text-blue-400">Sworn Testimony (የመሃላ ቃል)</div>
+                  <div className="font-bold text-blue-400">Sworn Testimony (á‹¨áˆ˜áˆƒáˆ‹ á‰ƒáˆ)</div>
                   <div className="text-[11px] text-slate-300 mt-1">
-                    <strong>Amharic:</strong> የመሐላ ቃል መስጠት
+                    <strong>Amharic:</strong> á‹¨áˆ˜áˆáˆ‹ á‰ƒáˆ áˆ˜áˆµáŒ á‰µ
                     <br />
                     <strong>Oromo:</strong> Kakuudhaan ragaa kennuu
                     <br />
@@ -909,13 +905,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 </div>
 
                 <div className="p-2.5 bg-slate-800/80 rounded-lg text-xs">
-                  <div className="font-bold text-blue-400">Triage / Emergency (አስቸኳይ ሕክምና)</div>
+                  <div className="font-bold text-blue-400">Triage / Emergency (áŠ áˆµá‰¸áŠ³á‹­ áˆ•áŠ­áˆáŠ“)</div>
                   <div className="text-[11px] text-slate-300 mt-1">
-                    <strong>Amharic:</strong> ድንገተኛ የሕክምና እርዳታ
+                    <strong>Amharic:</strong> á‹µáŠ•áŒˆá‰°áŠ› á‹¨áˆ•áŠ­áˆáŠ“ áŠ¥áˆ­á‹³á‰³
                     <br />
                     <strong>Oromo:</strong> Yaala ariifachiisaa
                     <br />
-                    <strong>Tigrinya:</strong> ህጹጽ ረድኤት ሕክምና
+                    <strong>Tigrinya:</strong> áˆ…áŒ¹áŒ½ áˆ¨á‹µáŠ¤á‰µ áˆ•áŠ­áˆáŠ“
                   </div>
                 </div>
               </div>
