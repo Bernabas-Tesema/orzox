@@ -212,7 +212,8 @@ export function usePortal() {
   // Client must start from the intake form; do not auto-open the call room.
   // Join is explicit via the Join button once an interpreter accepts.
 
-  // Auto-join: when a client's request moves to in_session, open the session room automatically.
+  // Auto-join: when a client's request moves to in_session, open the room automatically.
+  // Auto-join: when a client's request moves to in_session, open the room automatically.
   const autoJoinedSessions = useRef(new Set<string>());
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'client') return;
