@@ -106,10 +106,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Poll waiting calls (interpreters only) â€” shows queued calls in the sidebar.
+  // Poll waiting calls (interpreters only) -- stops when ending the call.
   // Poll every 2 seconds so new calls appear quickly during an active session.
   useEffect(() => {
-    if (currentUser.role !== 'interpreter') return;
+    if (currentUser.role !== 'interpreter' || endingCall) return;
     const fetchWaiting = async () => {
       try {
         const res = await api.getWaitingCalls();
@@ -484,6 +484,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const handleEndCall = async () => {
     if (endingCall) return;
     setEndingCall(true);
+    setWaitingCalls([]);
 
     // 1. Immediately stop local media and disconnect LiveKit room so the user's
     //    mic/camera stops regardless of what happens next.
@@ -808,8 +809,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
         </div>
 
-        {/* Waiting Calls Panel (interpreters only) */}
-        {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
+        {/* Waiting Calls Panel (interpreters only) — only shown during active session */}
+        {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
           <div className="w-72 bg-slate-900/98 border-l border-white/10 flex flex-col flex-shrink-0 overflow-hidden">
             <div className="p-3 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-2">
