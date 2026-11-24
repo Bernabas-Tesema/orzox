@@ -398,8 +398,8 @@ export function usePortal() {
     reason?: string
   ) => {
     const res = await api.respondToAssignment(assignmentId, response, reason);
-    await refreshData();
     if (response === 'accepted' && res.session?.id) setActiveSessionRoomId(res.session.id);
+    refreshData(); // fire and forget — don't await so the room opens immediately
   };
 
   const handleManualAssign = async (requestReference: string, _interpreterId?: string, _reason?: string) => {
