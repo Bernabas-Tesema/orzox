@@ -256,7 +256,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   const activeRequest = requests.find(
     (item) =>
       item.requesterId === currentUser.id &&
-      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching'].includes(item.status),
+      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching', 'in_session'].includes(item.status),
   );
 
   // Only show ring/wait UI after the desk starts a call from this form (no auto call on load).
@@ -285,12 +285,12 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
     const request = requests.find((item) => item.requesterId === currentUser.id &&
       ['submitted', 'validating', 'matching', 'assigned', 'pending_matching',
        'completed', 'cancelled', 'expired', 'unresolved', 'in_session'].includes(item.status));
-    if (!request) return; // no request at all yet — keep showing
+    if (!request) return;
     if (['completed', 'cancelled', 'expired', 'unresolved'].includes(request.status)) {
       setCalling(false);
       setAttempt(1);
     }
-    // in_session is handled by auto-join in usePortal — LiveSessionRoom opens on top
+    // in_session: stay on ringing page showing "Interpreter ready - Join call"
   }, [showCalling, currentUser.id, isSubmitting, requests]);
 
   useEffect(() => {

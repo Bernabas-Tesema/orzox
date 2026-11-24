@@ -2018,15 +2018,19 @@ router.get('/waiting-calls', (req: Request, res: Response) => {
   const waiting = db.requests
     .filter((r) => r.status === 'submitted' || r.status === 'pending_matching' || r.status === 'assigned')
     .map((r) => {
-      const asg = db.assignments
+      const pendingAsgs = db.assignments
         .filter((a) => a.requestReference === r.reference && a.outcome === 'pending')
-        .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())[0];
-      // Filter out assignments whose ring time has already expired
-      if (asg) {
-        const expiresMs = new Date(asg.expiresAt).getTime();
-        if (expiresMs < Date.now()) return null;
+        .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime());
+      const liveAsg = pendingAsgs.find((a) => new Date(a.expiresAt).getTime() > Date.now());
+      // If request is assigned but all assignments have expired, skip it
+      if (r.status === 'assigned' && pendingAsgs.length > 0 && !liveAsg) return null;
+      // If there is a live assignment, include with its expiry
+      if (liveAsg) return { ...r, assignmentExpiresAt: liveAsg.expiresAt, queued: false };
+      // submitted/pending_matching with no assignment yet — show as queued
+      if (r.status === 'submitted' || r.status === 'pending_matching') {
+        return { ...r, assignmentExpiresAt: null, queued: true };
       }
-      return { ...r, assignmentExpiresAt: asg?.expiresAt || null, queued: !asg };
+      return null;
     })
     .filter(Boolean);
   res.json({ waitingCalls: waiting });
