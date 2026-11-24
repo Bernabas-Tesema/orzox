@@ -212,8 +212,19 @@ export function usePortal() {
   // Client must start from the intake form; do not auto-open the call room.
   // Join is explicit via the Join button once an interpreter accepts.
 
-  // Auto-join: when a client's request moves to in_session, open the room automatically.
-  // Auto-join removed: client must click "Join call" explicitly from the ringing page.
+  // Auto-join: when a client's request moves to in_session, open the session room automatically.
+  const autoJoinedSessions = useRef(new Set<string>());
+  useEffect(() => {
+    if (!currentUser || currentUser.role !== 'client') return;
+    for (const request of requests) {
+      if (request.requesterId !== currentUser.id) continue;
+      if (request.status !== 'in_session' || !request.activeSessionId) continue;
+      if (autoJoinedSessions.current.has(request.activeSessionId)) continue;
+      if (activeSessionRoomId === request.activeSessionId) continue;
+      autoJoinedSessions.current.add(request.activeSessionId);
+      setActiveSessionRoomId(request.activeSessionId);
+    }
+  }, [requests, currentUser, activeSessionRoomId]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'client') return;

@@ -256,7 +256,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   const activeRequest = requests.find(
     (item) =>
       item.requesterId === currentUser.id &&
-      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching', 'in_session'].includes(item.status),
+      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching'].includes(item.status),
   );
 
   // Only show ring/wait UI after the desk starts a call from this form (no auto call on load).
