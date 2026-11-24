@@ -786,7 +786,6 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
           </div>
         )}
-        )}
 
         {/* Sidebar Glossary */}
         {showTerminology && (
