@@ -630,12 +630,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       )}
 
       {/* Main Workspace Body */}
-      <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden z-10">
-        {/* Call Viewport Grid */}
-        <div className="flex-1 bg-transparent p-2 sm:p-4 lg:p-6 flex flex-col justify-between min-h-0">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5 items-center max-w-5xl mx-auto w-full min-h-0">
-            {/* Box 1: Local Participant Feed (Requester / You) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+      <div className="flex-1 flex overflow-hidden z-10">
+        {/* Left: Video area */}
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="flex-1 p-2 sm:p-4 lg:p-5 flex flex-col justify-between min-h-0">
+            <div className="flex-1 grid grid-cols-2 gap-3 sm:gap-4 items-stretch min-h-0">
+              {/* Box 1: Local (You) */}
+              <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-xl min-h-40 sm:min-h-56 md:min-h-64">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -685,7 +686,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
 
             {/* Box 2: Remote Participant Feed (Interpreter or Client) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl overflow-hidden shadow-xl min-h-40 sm:min-h-56 md:min-h-64">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -806,9 +807,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Waiting Calls Overlay (interpreters only) */}
+        {/* Waiting Calls Panel (interpreters only) */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
-          <div className="absolute top-0 right-0 h-full w-64 bg-slate-950/92 backdrop-blur-md border-l border-white/10 overflow-y-auto z-30 flex flex-col">
+          <div className="w-72 bg-slate-900/98 border-l border-white/10 flex flex-col flex-shrink-0 overflow-hidden">
             <div className="p-3 border-b border-white/10 flex-shrink-0">
               <div className="flex items-center gap-2">
                 <PhoneCall className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
