@@ -806,6 +806,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </button>
           </div>
         </div>
+        </div>
 
         {/* Waiting Calls Panel (interpreters only) */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
