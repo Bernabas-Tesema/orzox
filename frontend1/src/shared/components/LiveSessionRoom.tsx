@@ -631,11 +631,15 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
 
       {/* Main Workspace Body */}
       <div className="flex-1 relative flex flex-col md:flex-row overflow-hidden z-10">
-        {/* Call Viewport Grid */}
+        {/* Call Viewport Grid ‚Äî shrinks when waiting calls sidebar is visible */}
         <div className="flex-1 bg-transparent p-2 sm:p-4 lg:p-6 flex flex-col justify-between min-h-0">
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-5 items-center max-w-5xl mx-auto w-full min-h-0">
+          <div className={`flex-1 grid gap-3 sm:gap-5 items-center mx-auto w-full min-h-0 ${
+            currentUser.role === 'interpreter' && waitingCalls.length > 0
+              ? 'grid-cols-1 max-w-2xl'
+              : 'grid-cols-1 md:grid-cols-2 max-w-5xl'
+          }`}>
             {/* Box 1: Local Participant Feed (Requester / You) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-56 md:h-64 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -685,7 +689,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
 
             {/* Box 2: Remote Participant Feed (Interpreter or Client) */}
-            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-64 md:h-72 lg:h-84 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
+            <div className="relative bg-slate-900/80 border border-white/10 rounded-2xl h-44 sm:h-56 md:h-64 flex flex-col items-center justify-center overflow-hidden shadow-xl transition-all duration-300">
               {/* Always render video element so ref is available for track attachment */}
               <div className="absolute inset-0 w-full h-full">
                 <video
@@ -806,96 +810,54 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Waiting Calls Sidebar (interpreters only) */}
+        {/* Waiting Calls Overlay (interpreters only) ó overlays the video area */}
         {currentUser.role === 'interpreter' && waitingCalls.length > 0 && (
-          <div className="w-full md:w-72 max-h-48 md:max-h-none bg-slate-900/95 backdrop-blur-md border-t md:border-t-0 md:border-l border-white/10 overflow-y-auto flex-shrink-0 z-20">
-            <div className="p-4 border-b border-white/10">
-              <div className="flex items-center space-x-2">
-                <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
-                <h3 className="text-xs font-bold text-white uppercase tracking-wider">
-                  Calls Waiting ({waitingCalls.length})
-                </h3>
+          <div className="absolute top-0 right-0 h-full w-64 bg-slate-950/92 backdrop-blur-md border-l border-white/10 overflow-y-auto z-30 flex flex-col">
+            <div className="p-3 border-b border-white/10 flex-shrink-0">
+              <div className="flex items-center gap-2">
+                <PhoneCall className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                <span className="text-[11px] font-bold text-white uppercase tracking-wider">Incoming ({waitingCalls.length})</span>
               </div>
-              <p className="text-[10px] text-slate-400 mt-1">
-                Pick a call below ‚Äî your current call ends first.
-              </p>
+              <p className="text-[10px] text-slate-400 mt-0.5">Pick a call ó current session ends first.</p>
             </div>
-            <div className="p-3 space-y-2">
+            <div className="p-2 space-y-2 flex-1 overflow-y-auto">
               {waitingCalls.map((call) => {
-                void tick; // drives re-render every second for countdown
+                void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-                const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : 0;
-                // Hide calls where the countdown has already hit zero
-                if (!call.queued && secondsLeft === 0) return null;
-                const urgent = secondsLeft <= 10;
+                const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : null;
+                if (secondsLeft !== null && secondsLeft === 0) return null;
+                const urgent = secondsLeft !== null && secondsLeft <= 10;
                 return (
-                  <div
-                    key={call.reference}
-                    className={`border rounded-xl p-3 space-y-2 transition-all ${
-                      urgent ? 'bg-red-950/40 border-red-500/50' : 'bg-white/5 border-white/10'
-                    }`}
-                  >
-                    {/* Countdown bar */}
-                    <div className="flex items-center justify-between">
-                      <span className="text-xs font-mono text-cyan-300 font-bold truncate">
-                        {call.reference}
-                      </span>
-                      {expiresAt ? (
-                        <span className={`text-xs font-mono font-bold px-2 py-0.5 rounded-lg ${
-                          urgent ? 'bg-red-500/30 text-red-300 animate-pulse' : 'bg-amber-500/20 text-amber-300'
-                        }`}>
-                          ‚è± {secondsLeft}s
-                        </span>
+                  <div key={call.reference} className={`border rounded-xl p-2.5 space-y-1.5 ${urgent ? 'bg-red-950/60 border-red-500/60' : 'bg-white/5 border-white/10'}`}>
+                    <div className="flex items-center justify-between gap-1">
+                      <span className="text-[10px] font-mono text-cyan-300 font-bold truncate">{call.reference}</span>
+                      {secondsLeft !== null ? (
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded flex-shrink-0 ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
                       ) : (
-                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-lg font-bold">
-                          Queued
-                        </span>
+                        <span className="text-[10px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded font-bold flex-shrink-0">Queue</span>
                       )}
                     </div>
-
-                    {/* Visual countdown bar ‚Äî only when timed */}
-                    {expiresAt > 0 && (
-                      <div className="w-full bg-white/10 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className={`h-1.5 rounded-full transition-all ${urgent ? 'bg-red-400' : 'bg-amber-400'}`}
-                          style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
-                        />
+                    {expiresAt > 0 && secondsLeft !== null && (
+                      <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+                        <div className={`h-1 rounded-full ${urgent ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }} />
                       </div>
                     )}
-
-                    <div className="text-[11px] text-slate-300 space-y-0.5">
-                      <div className="font-bold text-white text-xs truncate">{call.requesterName}</div>
-                      <div className="text-slate-400 truncate">{call.organizationName}</div>
-                      <div className="flex items-center gap-1.5 mt-1">
-                        <span className="font-bold text-cyan-200">{call.sourceLanguage?.toUpperCase() || '???'}</span>
-                        <span className="text-slate-500">‚Üí</span>
-                        <span className="font-bold text-cyan-200">{call.targetLanguage?.toUpperCase() || '???'}</span>
-                        {call.urgency === 'emergency' && (
-                          <span className="text-[9px] bg-red-500/30 text-red-300 px-1.5 py-0.5 rounded-full font-bold uppercase ml-auto">
-                            Emergency
-                          </span>
-                        )}
+                    <div className="text-[11px] space-y-0.5">
+                      <div className="font-bold text-white truncate">{call.requesterName}</div>
+                      <div className="text-slate-400 truncate text-[10px]">{call.organizationName}</div>
+                      <div className="flex items-center gap-1">
+                        <span className="font-bold text-cyan-200 text-[10px]">{call.sourceLanguage?.toUpperCase()}</span>
+                        <span className="text-slate-500 text-[10px]">?</span>
+                        <span className="font-bold text-cyan-200 text-[10px]">{call.targetLanguage?.toUpperCase()}</span>
+                        {call.urgency === 'emergency' && <span className="text-[9px] bg-red-500/40 text-red-200 px-1 py-0.5 rounded font-bold uppercase ml-auto">SOS</span>}
                       </div>
-                      <div className="text-slate-500 capitalize">{call.serviceCategory.replace(/_/g, ' ')}</div>
                     </div>
-
                     <button
                       onClick={() => handleTakeCall(call.reference)}
-                      disabled={takingCall === call.reference || (expiresAt > 0 && secondsLeft === 0)}
-                      className={`w-full py-2 rounded-lg text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                        urgent
-                          ? 'bg-red-600 hover:bg-red-500'
-                          : 'bg-emerald-600 hover:bg-emerald-500'
-                      } disabled:opacity-50`}
+                      disabled={takingCall === call.reference}
+                      className={`w-full py-1.5 rounded-lg text-white text-[11px] font-bold cursor-pointer flex items-center justify-center gap-1 ${urgent ? 'bg-red-600 hover:bg-red-500' : 'bg-emerald-600 hover:bg-emerald-500'} disabled:opacity-50`}
                     >
-                      {takingCall === call.reference ? (
-                        'Connecting...'
-                      ) : (
-                        <>
-                          <PhoneCall className="w-3.5 h-3.5" />
-                          Take Call
-                        </>
-                      )}
+                      {takingCall === call.reference ? 'ConnectingÖ' : <><PhoneCall className="w-3 h-3" />Take Call</>}
                     </button>
                   </div>
                 );

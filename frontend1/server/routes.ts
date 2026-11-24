@@ -2021,8 +2021,14 @@ router.get('/waiting-calls', (req: Request, res: Response) => {
       const asg = db.assignments
         .filter((a) => a.requestReference === r.reference && a.outcome === 'pending')
         .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime())[0];
+      // Filter out assignments whose ring time has already expired
+      if (asg) {
+        const expiresMs = new Date(asg.expiresAt).getTime();
+        if (expiresMs < Date.now()) return null;
+      }
       return { ...r, assignmentExpiresAt: asg?.expiresAt || null, queued: !asg };
-    });
+    })
+    .filter(Boolean);
   res.json({ waitingCalls: waiting });
 });
 
