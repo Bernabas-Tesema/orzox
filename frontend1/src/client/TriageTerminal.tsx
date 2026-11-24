@@ -250,6 +250,15 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   };
 
   const activeLanguages = languages.filter((l) => l.isActive);
+
+  // Derive active request from server state — this means the ringing page
+  // shows even on page reload or if the user navigates away and comes back.
+  const activeRequest = requests.find(
+    (item) =>
+      item.requesterId === currentUser.id &&
+      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching'].includes(item.status),
+  );
+
   // Only show ring/wait UI after the desk starts a call from this form (no auto call on load).
   const ringingRequest = calling
     ? requests.find(
@@ -257,22 +266,24 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
           item.requesterId === currentUser.id &&
           ['matching', 'assigned', 'in_session'].includes(item.status),
       )
-    : undefined;
+    : activeRequest; // also show if there's already an active request from a previous load
+
   const interpreterReady =
     Boolean(ringingRequest?.activeSessionId) &&
     (ringingRequest?.status === 'assigned' || ringingRequest?.status === 'in_session');
-  const showCalling = calling;
-  const phoneRinging = calling && !interpreterReady && !isSubmitting;
+
+  // Show the ringing page if either the client just submitted (calling) OR
+  // there is already an active request in progress (prevents double-submit).
+  const showCalling = calling || Boolean(activeRequest);
+  const phoneRinging = showCalling && !interpreterReady && !isSubmitting;
   const languageName = (code?: string) => languages.find((item) => item.code === code)?.name || (code ? code.toUpperCase() : 'Unknown language');
 
   useEffect(() => {
     if (!calling || isSubmitting) return;
-    // When the call goes into session (in_session), stop the ringing UI.
-    // Also clear if the request is completed/cancelled/expired — the call ended.
     const stillWaiting = requests.some(
       (item) =>
         item.requesterId === currentUser.id &&
-        ['submitted', 'validating', 'matching', 'assigned'].includes(item.status),
+        ['submitted', 'validating', 'matching', 'assigned', 'pending_matching'].includes(item.status),
     );
     const sessionDone = requests.some(
       (item) =>
@@ -281,6 +292,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
     );
     if (!stillWaiting || sessionDone) {
       setCalling(false);
+      setAttempt(1);
     }
   }, [calling, currentUser.id, isSubmitting, requests]);
 
