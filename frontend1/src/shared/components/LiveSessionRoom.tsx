@@ -891,32 +891,40 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Right Sidebar: Incoming / Waiting Calls Card + Live Session Chat */}
+        {/* Right Sidebar: Waiting / Incoming Calls Card + Live Session Chat */}
         {(() => {
           const visibleWaiting = waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference));
-          const hasWaiting = currentUser.role === 'interpreter' && visibleWaiting.length > 0 && !endingCall;
+          const isInterpreter = currentUser.role === 'interpreter' && !endingCall;
+          const hasWaiting = isInterpreter && visibleWaiting.length > 0;
           if (!showRightPanel && !hasWaiting) return null;
           const widthClass = chatWidth === 'narrow' ? 'md:w-72' : chatWidth === 'wide' ? 'md:w-[28rem] lg:w-[32rem]' : 'md:w-80 lg:w-96';
           return (
         <aside className={`w-full ${widthClass} max-h-[48vh] md:max-h-none flex-shrink-0 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
-          {/* Top Card: Incoming Calls (interpreters only when another caller is waiting) */}
-          {hasWaiting && (
-            <div className="rounded-2xl border border-emerald-200 bg-slate-50 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
+          {/* Top Card: Waiting / Incoming Calls (always visible for interpreters in live session) */}
+          {isInterpreter && (
+            <div className={`rounded-2xl border p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0 ${hasWaiting ? 'border-emerald-200 bg-slate-50' : 'border-slate-200 bg-slate-50/70'}`}>
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <PhoneCall className="w-4 h-4 text-emerald-600 animate-pulse" />
+                  <PhoneCall className={`w-4 h-4 ${hasWaiting ? 'text-emerald-600 animate-pulse' : 'text-slate-400'}`} />
                   <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
-                    Incoming Call ({visibleWaiting.length})
+                    {hasWaiting ? `Incoming Call (${visibleWaiting.length})` : 'Waiting Calls (0)'}
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => addClearedWaitingRefs(visibleWaiting.map((c) => c.reference))}
-                  className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-lg cursor-pointer"
-                >
-                  Clear All
-                </button>
+                {hasWaiting && (
+                  <button
+                    type="button"
+                    onClick={() => addClearedWaitingRefs(visibleWaiting.map((c) => c.reference))}
+                    className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-lg cursor-pointer"
+                  >
+                    Clear All
+                  </button>
+                )}
               </div>
+              {!hasWaiting && (
+                <p className="text-[11px] text-slate-500">
+                  No callers waiting right now. New matching calls will appear here.
+                </p>
+              )}
               {visibleWaiting.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
