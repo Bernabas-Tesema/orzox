@@ -12,7 +12,8 @@ import {
   RefreshCw,
   AlertCircle,
   ChevronDown,
-  Check
+  Check,
+  Search
 } from 'lucide-react';
 import { workplaceContext, workplaceLanguageLabel, workplaceOf } from '../shared/workplace';
 
@@ -291,7 +292,38 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
     }
   };
 
+  const [sourceOpen, setSourceOpen] = useState(false);
+  const [sourceSearch, setSourceSearch] = useState('');
+  const sourceDropdownRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!sourceOpen) return;
+    const onOutside = (e: MouseEvent) => {
+      if (sourceDropdownRef.current && !sourceDropdownRef.current.contains(e.target as Node)) {
+        setSourceOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onOutside);
+    return () => document.removeEventListener('mousedown', onOutside);
+  }, [sourceOpen]);
+
   const activeLanguages = languages.filter((l) => l.isActive);
+  const filteredSourceLanguages = activeLanguages.filter((lang) => {
+    const q = sourceSearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      lang.name.toLowerCase().includes(q) ||
+      lang.nativeName.toLowerCase().includes(q) ||
+      lang.code.toLowerCase().includes(q)
+    );
+  });
+  const selectedSourceObj = activeLanguages.find((l) => l.code === sourceLanguage);
+  const selectedSourceLabel =
+    sourceLanguage === 'unknown'
+      ? 'Uncertain / Other Dialect'
+      : selectedSourceObj
+        ? `${selectedSourceObj.name} (${selectedSourceObj.nativeName})`
+        : sourceLanguage.toUpperCase();
   const staffLanguageOptions = [
     { code: 'amh', label: 'Amharic (አማርኛ)' },
     { code: 'eng', label: 'English' },
@@ -447,28 +479,78 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Languages Card */}
           <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 grid gap-4 sm:grid-cols-2">
-            {/* Patient Language Dropdown */}
-            <div>
+            {/* Patient Language Searchable Dropdown */}
+            <div ref={sourceDropdownRef} className="relative">
               <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                 {workplaceLanguageLabel(workplace)}
               </label>
-              <div className="relative">
-                <select
-                  value={sourceLanguage}
-                  onChange={(e) => handleSourceLanguageChange(e.target.value)}
-                  className="w-full h-11 px-3.5 pr-9 text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer shadow-xs"
-                >
-                  {activeLanguages.map((lang) => (
-                    <option key={lang.code} value={lang.code} className="bg-white text-slate-900">
-                      {lang.name} ({lang.nativeName})
-                    </option>
-                  ))}
-                  <option value="unknown" className="bg-white text-slate-900">
-                    Uncertain / Other Dialect
-                  </option>
-                </select>
-                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
-              </div>
+              <button
+                type="button"
+                onClick={() => setSourceOpen((o) => !o)}
+                className="w-full h-11 px-3.5 pr-9 text-left text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 transition cursor-pointer shadow-xs truncate relative"
+              >
+                <span className="truncate block">{selectedSourceLabel}</span>
+                <ChevronDown className={`w-4 h-4 text-slate-400 absolute right-3 top-3.5 transition-transform ${sourceOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {sourceOpen && (
+                <div className="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
+                  <div className="p-2 border-b border-slate-100 bg-slate-50/70">
+                    <div className="relative">
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                      <input
+                        type="text"
+                        autoFocus
+                        value={sourceSearch}
+                        onChange={(e) => setSourceSearch(e.target.value)}
+                        placeholder="Search language..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+                    {filteredSourceLanguages.map((lang) => {
+                      const selected = lang.code === sourceLanguage;
+                      return (
+                        <button
+                          key={lang.code}
+                          type="button"
+                          onClick={() => {
+                            handleSourceLanguageChange(lang.code);
+                            setSourceOpen(false);
+                            setSourceSearch('');
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                            selected ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
+                          }`}
+                        >
+                          <span className="truncate">{lang.name} ({lang.nativeName})</span>
+                          {selected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                    {('uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) || !sourceSearch.trim()) && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleSourceLanguageChange('unknown');
+                          setSourceOpen(false);
+                          setSourceSearch('');
+                        }}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                          sourceLanguage === 'unknown' ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
+                        }`}
+                      >
+                        <span>Uncertain / Other Dialect</span>
+                        {sourceLanguage === 'unknown' && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                      </button>
+                    )}
+                    {filteredSourceLanguages.length === 0 && !'uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) && (
+                      <p className="px-3 py-3 text-xs text-slate-400 text-center">No matching language found.</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Staff Language Dropdown */}
