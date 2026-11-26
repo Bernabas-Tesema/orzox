@@ -278,7 +278,11 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
         return;
       }
       setCalling(false);
-      setError('The request was saved. An interpreter will be assigned from the dispatch queue.');
+      if (result === 'no_interpreter') {
+        setError('No interpreter available for this service and language.');
+      } else {
+        setError('The request was saved. An interpreter will be assigned from the dispatch queue.');
+      }
     } catch (err: any) {
       setCalling(false);
       setError(err?.message || 'The request could not be saved.');

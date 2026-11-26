@@ -246,7 +246,9 @@ def language_match(interp: Interpreter, source: str, target: str) -> bool:
     tgt = (target or "").lower()
     if src in ("unknown", ""):
         return True
-    return src in codes or tgt in codes
+    if len(codes) >= 2 and tgt:
+        return src in codes and tgt in codes
+    return src in codes
 
 
 def category_match(interp: Interpreter, category: str) -> bool:
@@ -300,8 +302,21 @@ def find_candidates(
     return deduped
 
 
+def has_matching_busy_interpreter(req: InterpretationRequest) -> bool:
+    """True when at least one matching interpreter is online and currently on another call."""
+    qs = Interpreter.objects.filter(availability="busy").exclude(
+        verification_state__in=("rejected", "suspended")
+    )
+    for interp in qs:
+        if language_match(interp, req.source_language, req.target_language) and category_match(
+            interp, req.service_category
+        ):
+            return True
+    return False
+
+
 def try_auto_dispatch(req: InterpretationRequest) -> Optional[dict[str, Any]]:
-    """Ring free interpreters directly — no coordinator assignment step."""
+    """Ring free interpreters directly — strictly matching service category and languages."""
     if req.schedule_type == "scheduled":
         req.status = "submitted"
         req.save(update_fields=["status"])
@@ -313,20 +328,22 @@ def try_auto_dispatch(req: InterpretationRequest) -> Optional[dict[str, Any]]:
         responded_at=timezone.now(),
     )
 
-    # 1) online (available) + language/category
-    # 2) online (available) any language
-    # Offline interpreters never receive calls.
+    # Strictly match online (available) interpreters with matching service category and languages.
     candidates = find_candidates(req, loose=False, include_offline=False)
     if not candidates:
-        candidates = find_candidates(req, loose=True, include_offline=False)
-    if not candidates:
-        # All matching interpreters may be on an active call. Keep the request
-        # waiting and automatically dispatch it as soon as an interpreter frees.
-        session = create_ringing_session(req)
+        if has_matching_busy_interpreter(req):
+            # All matching interpreters are busy on another call -> queue in their waiting list.
+            session = create_ringing_session(req)
+            return {
+                "status": "queued",
+                "sessionId": session.id,
+                "reason": "Matching interpreters are busy",
+            }
+        # No online/busy interpreter matches this service and language at all.
+        hold_unanswered(req, "No interpreter available for this service and language")
         return {
-            "status": "queued",
-            "sessionId": session.id,
-            "reason": "Matching interpreters are busy",
+            "status": "no_interpreter",
+            "reason": "No interpreter available for this service and language",
         }
 
     # Skip interpreters who already rejected this request in prior waves.

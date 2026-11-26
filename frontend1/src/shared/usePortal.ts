@@ -440,9 +440,13 @@ export function usePortal() {
     const res = await api.createRequest(data);
     await refreshData();
     const dispatchStatus = String(res.dispatch?.status || '');
+    if (dispatchStatus === 'no_interpreter' || res.request.status === 'unresolved') {
+      return 'no_interpreter';
+    }
     // Never auto-join the LiveKit room from create — desk waits while interpreters ring.
     if (
       dispatchStatus === 'ringing' ||
+      dispatchStatus === 'queued' ||
       res.request.status === 'matching' ||
       res.request.status === 'assigned'
     ) {
