@@ -206,16 +206,16 @@ export default function App() {
           currentUser={currentUser}
           onEndSession={portal.handleEndSession}
           onClose={() => portal.setActiveSessionRoomId(null)}
-          onCallFinished={(sessionId) => {
+          onCallFinished={(sessionId, status) => {
             portal.setActiveSessionRoomId(null);
             const bySelf = portal.consumeEndedBySelf(sessionId);
-            if (bySelf) {
-              if (currentUser.role === 'client') portal.setFeedbackModalSessionId(sessionId);
-            } else {
+            if (!bySelf && status === 'cancelled') {
               portal.setCallDeclinedInfo({
                 sessionId,
-                message: 'The call was declined or ended by the other side.',
+                message: 'The call was declined by the other side.',
               });
+            } else if (currentUser.role === 'client' && status === 'completed') {
+              portal.setFeedbackModalSessionId(sessionId);
             }
             portal.refreshData();
           }}

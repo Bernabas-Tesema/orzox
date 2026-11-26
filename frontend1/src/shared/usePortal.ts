@@ -515,9 +515,9 @@ export function usePortal() {
     await refreshData();
   };
 
-  const handleEndSession = async (sessionId: string) => {
+  const handleEndSession = async (sessionId: string, declined = false) => {
     endedBySelfRef.current = sessionId;
-    await api.endSession(sessionId);
+    await api.endSession(sessionId, declined);
     await refreshData();
   };
 

@@ -33,6 +33,7 @@ import {
   Maximize2,
   Minimize2,
   X,
+  XCircle,
 } from 'lucide-react';
 
 interface ChatMessageItem {
@@ -46,9 +47,9 @@ interface ChatMessageItem {
 interface LiveSessionRoomProps {
   session: InterpretationSession;
   currentUser: User;
-  onEndSession: (sessionId: string) => Promise<void>;
+  onEndSession: (sessionId: string, declined?: boolean) => Promise<void>;
   onClose: () => void;
-  onCallFinished?: (sessionId: string) => void;
+  onCallFinished?: (sessionId: string, status?: string) => void;
   onOpenCompletionModal: (sessionId: string) => void;
   onTakeWaitingCall?: (reference: string) => Promise<void>;
   pendingCompletionSessionIds?: string[];
@@ -460,10 +461,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const onCallFinishedRef = useRef(onCallFinished);
   onCallFinishedRef.current = onCallFinished;
 
-  const leaveBecauseCallEnded = () => {
+  const leaveBecauseCallEnded = (status?: string) => {
     roomRef.current?.disconnect();
     localStreamRef.current?.getTracks().forEach((track) => track.stop());
-    if (onCallFinishedRef.current) onCallFinishedRef.current(session.id);
+    if (onCallFinishedRef.current) onCallFinishedRef.current(session.id, status);
     else onCloseRef.current();
   };
 
@@ -474,7 +475,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         const res = await api.getSession(session.id);
         if (stopped || !['completed', 'cancelled', 'expired'].includes(res.session.status)) return;
         stopped = true;
-        leaveBecauseCallEnded();
+        leaveBecauseCallEnded(res.session.status);
       } catch {
         // A missed status check should not drop a live call.
       }
@@ -592,9 +593,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     }
   };
 
-  // End Call — disconnect media first, then notify backend.
-  // A network hiccup on the backend call must never strand the user in the room.
-  const handleEndCall = async () => {
+  // End Call or Decline Call — disconnect media first, then notify backend.
+  const handleEndCall = async (declined = false) => {
     if (endingCall) return;
     setEndingCall(true);
     setWaitingCalls([]);
@@ -608,21 +608,21 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       localStreamRef.current?.getTracks().forEach((t) => t.stop());
     } catch { /* ignore */ }
 
-    // 2. Tell the backend the session ended. If the fetch fails (network blip,
-    //    server offline, session already completed) we still exit gracefully.
+    // 2. Tell the backend the session ended or was declined.
     try {
-      await onEndSession(session.id);
+      await onEndSession(session.id, declined);
     } catch (err: any) {
-      // Log the error but do NOT block exit â€” the status-watcher poll will
-      // eventually reconcile if the request reached the server.
       console.warn('End-session API call failed (session will be cleaned up by poll):', err?.message ?? err);
     }
 
-    // 3. Exit the room UI regardless.
-    if (currentUser.role === 'interpreter') {
+    // 3. Exit the room UI.
+    // The person who clicked Decline exits cleanly without seeing the "Call Declined" card.
+    if (declined) {
+      onClose();
+    } else if (currentUser.role === 'interpreter') {
       onOpenCompletionModal(session.id);
     } else if (onCallFinished) {
-      onCallFinished(session.id);
+      onCallFinished(session.id, 'completed');
     } else {
       onClose();
     }
@@ -852,7 +852,11 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   </span>
                 )}
               </button>
-              <button onClick={handleEndCall} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
+              <button onClick={() => handleEndCall(true)} disabled={endingCall} className="border border-red-300 bg-red-50 hover:bg-red-100 text-red-700 font-bold px-4 py-2.5 rounded-xl cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
+                <XCircle className="w-4 h-4" />
+                <span>Decline Call</span>
+              </button>
+              <button onClick={() => handleEndCall(false)} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
                 <PhoneOff className="w-4 h-4" />
                 <span>{endingCall ? 'Ending...' : 'End Call'}</span>
               </button>

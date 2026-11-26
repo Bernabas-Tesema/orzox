@@ -246,9 +246,10 @@ export const api = {
       body: JSON.stringify({ connectionHealth, durationSeconds }),
     });
   },
-  async endSession(id: string): Promise<{ success: boolean; session: InterpretationSession; message: string }> {
+  async endSession(id: string, declined = false): Promise<{ success: boolean; session: InterpretationSession; message: string }> {
     return request(`/sessions/${id}/end`, {
       method: 'POST',
+      body: JSON.stringify({ declined }),
     });
   },
   async getLiveKitToken(sessionId: string): Promise<{

@@ -995,11 +995,19 @@ def session_end(request: HttpRequest, session_id: str) -> JsonResponse:
     session = InterpretationSession.objects.filter(pk=session_id).first()
     if not session:
         return _error("Session not found", 404)
-    session.status = "completed"
+    declined = bool(_body(request).get("declined"))
+    session.status = "cancelled" if declined else "completed"
     session.save(update_fields=["status"])
-    InterpretationRequest.objects.filter(active_session_id=session_id).update(
-        status="completed", updated_at=timezone.now()
-    )
+    if declined:
+        InterpretationRequest.objects.filter(active_session_id=session_id).update(
+            status="cancelled",
+            cancellation_reason="Call declined during session",
+            updated_at=timezone.now(),
+        )
+    else:
+        InterpretationRequest.objects.filter(active_session_id=session_id).update(
+            status="completed", updated_at=timezone.now()
+        )
     # Free the interpreter so they can receive new rings.
     if session.interpreter_id:
         Interpreter.objects.filter(pk=session.interpreter_id).update(availability="available")
