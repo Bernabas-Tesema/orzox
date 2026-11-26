@@ -31,6 +31,7 @@ export function usePortal() {
   const [sessions, setSessions] = useState<InterpretationSession[]>([]);
   const [completions, setCompletions] = useState<CompletionReport[]>([]);
   const [notifications, setNotifications] = useState<PlatformNotification[]>([]);
+  const [clearedNotificationIds, setClearedNotificationIds] = useState<string[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [settings, setSettings] = useState<PlatformSettings | null>(null);
 
@@ -549,6 +550,48 @@ export function usePortal() {
     await refreshData();
   };
 
+  useEffect(() => {
+    if (!currentUser?.id) {
+      setClearedNotificationIds([]);
+      return;
+    }
+    try {
+      const raw = localStorage.getItem(`orzo-cleared-notifs-${currentUser.id}`);
+      setClearedNotificationIds(raw ? (JSON.parse(raw) as string[]) : []);
+    } catch {
+      setClearedNotificationIds([]);
+    }
+  }, [currentUser?.id]);
+
+  const handleClearNotification = (id: string) => {
+    if (!currentUser?.id) return;
+    setClearedNotificationIds((prev) => {
+      const next = Array.from(new Set([...prev, id]));
+      try {
+        localStorage.setItem(`orzo-cleared-notifs-${currentUser.id}`, JSON.stringify(next.slice(-300)));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const handleClearAllNotifications = () => {
+    if (!currentUser?.id) return;
+    const allIds = notifications.map((n) => n.id);
+    setClearedNotificationIds((prev) => {
+      const next = Array.from(new Set([...prev, ...allIds]));
+      try {
+        localStorage.setItem(`orzo-cleared-notifs-${currentUser.id}`, JSON.stringify(next.slice(-300)));
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
+
+  const visibleNotifications = notifications.filter((n) => !clearedNotificationIds.includes(n.id));
+
   // ── Waiting calls ──
   const handleTakeWaitingCall = async (reference: string) => {
     const prevRoomId = activeSessionRoomId;
@@ -619,7 +662,7 @@ export function usePortal() {
     assignments,
     sessions,
     completions,
-    notifications,
+    notifications: visibleNotifications,
     auditLogs,
     settings,
     loading,
@@ -682,6 +725,8 @@ export function usePortal() {
     handleSubmitCompletion,
     handleSubmitFeedback,
     handleMarkNotificationRead,
+    handleClearNotification,
+    handleClearAllNotifications,
     handleTakeWaitingCall,
     meetings,
     activeMeetingId,

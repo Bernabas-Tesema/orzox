@@ -256,6 +256,8 @@ export default function App() {
         onClose={() => portal.setIsNotificationOpen(false)}
         notifications={portal.notifications}
         onMarkRead={portal.handleMarkNotificationRead}
+        onClearNotification={portal.handleClearNotification}
+        onClearAllNotifications={portal.handleClearAllNotifications}
       />
 
       <button

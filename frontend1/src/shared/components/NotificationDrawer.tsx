@@ -14,6 +14,7 @@ import {
   Star,
   UserX,
   X,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -22,6 +23,8 @@ interface NotificationDrawerProps {
   onClose: () => void;
   notifications: PlatformNotification[];
   onMarkRead: (id: string) => void;
+  onClearNotification?: (id: string) => void;
+  onClearAllNotifications?: () => void;
 }
 
 function notificationVisual(item: PlatformNotification): { Icon: LucideIcon; wrap: string } {
@@ -45,6 +48,8 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
   onClose,
   notifications,
   onMarkRead,
+  onClearNotification,
+  onClearAllNotifications,
 }) => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected = notifications.find((item) => item.id === selectedId) || null;
@@ -80,9 +85,21 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
             )}
             <h2 className="text-base font-bold text-gray-900 truncate">{selected ? 'Notification' : 'Notifications'}</h2>
           </div>
-          <button type="button" onClick={close} className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 cursor-pointer">
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            {!selected && notifications.length > 0 && onClearAllNotifications && (
+              <button
+                type="button"
+                onClick={onClearAllNotifications}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white px-2.5 py-1 text-xs font-bold text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Clear All
+              </button>
+            )}
+            <button type="button" onClick={close} className="p-1 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-200 cursor-pointer">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {selected && selectedVisual ? (
@@ -110,10 +127,12 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
               notifications.map((notif) => {
                 const visual = notificationVisual(notif);
                 return (
-                  <button
+                  <div
                     key={notif.id}
-                    type="button"
                     onClick={() => openDetail(notif)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') openDetail(notif); }}
                     className={`w-full text-left px-5 py-3.5 border-b border-gray-100 hover:bg-emerald-50/70 cursor-pointer ${notif.read ? 'bg-white' : 'bg-emerald-50/80'}`}
                   >
                     <div className="flex items-start gap-3">
@@ -122,16 +141,31 @@ export const NotificationDrawer: React.FC<NotificationDrawerProps> = ({
                         {!notif.read && <span className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-600 ring-2 ring-white" />}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start justify-between gap-2">
                           <h4 className="text-sm font-bold text-gray-900 leading-snug">{notif.title}</h4>
-                          <span className="shrink-0 text-[11px] text-gray-400">
-                            {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                          </span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-[11px] text-gray-400">
+                              {new Date(notif.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                            {onClearNotification && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onClearNotification(notif.id);
+                                }}
+                                className="p-1 rounded-md text-gray-400 hover:text-red-600 hover:bg-red-50 cursor-pointer"
+                                title="Clear notification"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            )}
+                          </div>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 line-clamp-2">{notif.message}</p>
                       </div>
                     </div>
-                  </button>
+                  </div>
                 );
               })
             )}

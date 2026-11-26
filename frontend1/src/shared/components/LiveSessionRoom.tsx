@@ -34,6 +34,8 @@ import {
   Minimize2,
   X,
   XCircle,
+  ChevronUp,
+  ChevronDown,
 } from 'lucide-react';
 
 interface ChatMessageItem {
@@ -88,7 +90,25 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [hasRemoteVideo, setHasRemoteVideo] = useState<boolean>(false);
   const [remoteIsMuted, setRemoteIsMuted] = useState<boolean>(false);
   const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
-  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>([]);
+  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(`orzo-cleared-waiting-${currentUser.id}`);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const addClearedWaitingRefs = (refs: string[]) => {
+    setClearedWaitingRefs((prev) => {
+      const next = Array.from(new Set([...prev, ...refs]));
+      try {
+        localStorage.setItem(`orzo-cleared-waiting-${currentUser.id}`, JSON.stringify(next.slice(-200)));
+      } catch {
+        // ignore storage quota
+      }
+      return next;
+    });
+  };
   const [takingCall, setTakingCall] = useState<string | null>(null);
   // Live countdown ticker — increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
@@ -97,6 +117,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
   );
   const [chatWidth, setChatWidth] = useState<'narrow' | 'normal' | 'wide'>('normal');
+  const [chatHeight, setChatHeight] = useState<'short' | 'normal' | 'tall'>('normal');
   const [rightTab, setRightTab] = useState<'chat' | 'participants'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [unreadChat, setUnreadChat] = useState(0);
@@ -872,8 +893,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           const widthClass = chatWidth === 'narrow' ? 'md:w-72' : chatWidth === 'wide' ? 'md:w-[28rem] lg:w-[32rem]' : 'md:w-80 lg:w-96';
           return (
         <aside className={`w-full ${widthClass} max-h-[48vh] md:max-h-none flex-shrink-0 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
-          {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting) */}
-          {hasWaiting && (
+          {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting & chat not expanded tall) */}
+          {hasWaiting && chatHeight !== 'tall' && (
             <div className="rounded-2xl border border-emerald-200 bg-slate-50 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -884,7 +905,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setClearedWaitingRefs((prev) => [...prev, ...visibleWaiting.map((c) => c.reference)])}
+                  onClick={() => addClearedWaitingRefs(visibleWaiting.map((c) => c.reference))}
                   className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-lg cursor-pointer"
                 >
                   Clear All
@@ -908,7 +929,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                         </span>
                         <button
                           type="button"
-                          onClick={() => setClearedWaitingRefs((prev) => [...prev, call.reference])}
+                          onClick={() => addClearedWaitingRefs([call.reference])}
                           className="p-0.5 rounded text-slate-500 hover:text-slate-900 cursor-pointer"
                           title="Clear card"
                         >
@@ -951,14 +972,14 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             </div>
           )}
 
-          {/* Bottom Card: Session Chat & Participants (matches reference green-pill style + width controls) */}
-          <div className="flex-1 min-h-0 rounded-2xl border border-slate-200 bg-white flex flex-col overflow-hidden shadow-xs">
-            <div className="p-2 border-b border-slate-100 flex items-center gap-1.5 bg-slate-50/70">
+          {/* Bottom Card: Session Chat & Participants (arrows to make taller/shorter + width controls) */}
+          <div className={`${chatHeight === 'short' ? 'h-60 mt-auto flex-shrink-0' : 'flex-1 min-h-0'} rounded-2xl border border-slate-200 bg-white flex flex-col overflow-hidden shadow-xs transition-all duration-200`}>
+            <div className="p-2 border-b border-slate-100 flex items-center gap-1 bg-slate-50/70">
               <div className="flex-1 grid grid-cols-2 gap-1">
                 <button
                   type="button"
                   onClick={() => setRightTab('chat')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                     rightTab === 'chat' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
                   }`}
                 >
@@ -968,7 +989,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 <button
                   type="button"
                   onClick={() => setRightTab('participants')}
-                  className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                  className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
                     rightTab === 'participants' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
                   }`}
                 >
@@ -978,9 +999,27 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               </div>
               <button
                 type="button"
+                onClick={() => setChatHeight((h) => (h === 'short' ? 'normal' : h === 'normal' ? 'tall' : 'tall'))}
+                disabled={chatHeight === 'tall'}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                title="Make chat taller"
+              >
+                <ChevronUp className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setChatHeight((h) => (h === 'tall' ? 'normal' : h === 'normal' ? 'short' : 'short'))}
+                disabled={chatHeight === 'short'}
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                title="Make chat shorter"
+              >
+                <ChevronDown className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
                 onClick={() => setChatWidth((w) => (w === 'wide' ? 'normal' : w === 'normal' ? 'narrow' : 'normal'))}
                 disabled={chatWidth === 'narrow'}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer hidden md:inline-flex"
                 title="Make chat narrower"
               >
                 <Minimize2 className="w-3.5 h-3.5" />
@@ -989,7 +1028,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 type="button"
                 onClick={() => setChatWidth((w) => (w === 'narrow' ? 'normal' : w === 'normal' ? 'wide' : 'wide'))}
                 disabled={chatWidth === 'wide'}
-                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer hidden md:inline-flex"
                 title="Make chat wider"
               >
                 <Maximize2 className="w-3.5 h-3.5" />

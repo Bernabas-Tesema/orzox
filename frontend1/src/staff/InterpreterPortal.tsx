@@ -96,9 +96,43 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
 
   // Poll live waiting calls (calls ringing right now with countdown)
   const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
-  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>([]);
-  const [dismissedMissedId, setDismissedMissedId] = useState<string | null>(null);
+  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem(`orzo-cleared-waiting-${currentUser.id}`);
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [dismissedMissedId, setDismissedMissedId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem(`orzo-dismissed-missed-${currentUser.id}`);
+    } catch {
+      return null;
+    }
+  });
   const [takingWaitingCall, setTakingWaitingCall] = useState<string | null>(null);
+
+  const addClearedWaitingRefs = (refs: string[]) => {
+    setClearedWaitingRefs((prev) => {
+      const next = Array.from(new Set([...prev, ...refs]));
+      try {
+        localStorage.setItem(`orzo-cleared-waiting-${currentUser.id}`, JSON.stringify(next.slice(-200)));
+      } catch {
+        // ignore storage quota
+      }
+      return next;
+    });
+  };
+
+  const dismissMissedCard = (id: string) => {
+    setDismissedMissedId(id);
+    try {
+      localStorage.setItem(`orzo-dismissed-missed-${currentUser.id}`, id);
+    } catch {
+      // ignore
+    }
+  };
   useEffect(() => {
     if (!profile) return;
     const fetch = async () => {
@@ -672,7 +706,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => setDismissedMissedId(missedCall.id)}
+              onClick={() => dismissMissedCard(missedCall.id)}
               className="text-[11px] font-bold text-white/70 hover:text-white px-2 py-0.5 rounded-lg bg-white/10 cursor-pointer"
             >
               Clear
@@ -710,7 +744,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => setClearedWaitingRefs(waitingCalls.map((c) => c.reference))}
+              onClick={() => addClearedWaitingRefs(waitingCalls.map((c) => c.reference))}
               className="text-[11px] font-bold text-white/70 hover:text-white px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 cursor-pointer"
             >
               Clear History
@@ -772,7 +806,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setClearedWaitingRefs((prev) => [...prev, call.reference])}
+                      onClick={() => addClearedWaitingRefs([call.reference])}
                       className="h-9 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
                     >
                       Clear

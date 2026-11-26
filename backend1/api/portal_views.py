@@ -314,7 +314,9 @@ def auth_login(request: HttpRequest) -> JsonResponse:
     # Do NOT exclude "busy" — a previous call may have ended without resetting
     # availability, leaving the interpreter permanently stuck.
     if account.role == "interpreter":
-        Interpreter.objects.filter(email__iexact=account.email).update(availability="available")
+        Interpreter.objects.filter(email__iexact=account.email).exclude(availability="offline").update(
+            availability="available"
+        )
 
     token = _open_session(account)
     return JsonResponse(
@@ -1008,9 +1010,11 @@ def session_end(request: HttpRequest, session_id: str) -> JsonResponse:
         InterpretationRequest.objects.filter(active_session_id=session_id).update(
             status="completed", updated_at=timezone.now()
         )
-    # Free the interpreter so they can receive new rings.
+    # Free the interpreter so they can receive new rings (keep offline if they turned OFF).
     if session.interpreter_id:
-        Interpreter.objects.filter(pk=session.interpreter_id).update(availability="available")
+        Interpreter.objects.filter(pk=session.interpreter_id).exclude(availability="offline").update(
+            availability="available"
+        )
         dispatch.reroute_waiting_requests()
     # Expire any lingering pending assignments for this request.
     Assignment.objects.filter(
@@ -1167,7 +1171,9 @@ def completions(request: HttpRequest) -> JsonResponse:
             status="completed", updated_at=timezone.now()
         )
         if session.interpreter_id:
-            Interpreter.objects.filter(pk=session.interpreter_id).update(availability="available")
+            Interpreter.objects.filter(pk=session.interpreter_id).exclude(availability="offline").update(
+                availability="available"
+            )
     report = CompletionReport.objects.create(
         id=f"cmp-{secrets.token_hex(4)}",
         session_id=session_id or (session.id if session else ""),
