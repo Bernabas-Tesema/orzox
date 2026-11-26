@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
   InterpretationRequest,
@@ -13,7 +14,8 @@ import {
   AlertCircle,
   ChevronDown,
   Check,
-  Search
+  Search,
+  Languages
 } from 'lucide-react';
 import { workplaceContext, workplaceLanguageLabel, workplaceOf } from '../shared/workplace';
 
@@ -402,13 +404,50 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   }, [phoneRinging]);
 
   return (
-    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),transparent_40%),linear-gradient(135deg,#020617,#0f172a_60%,#020617)]' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(20,184,166,0.10),transparent_45%),linear-gradient(135deg,#f8fafc,#eef4ff_50%,#f0fdfa)]'}`}>
+    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),transparent_40%),linear-gradient(135deg,#020617,#0f172a_60%,#020617)]' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-[#eef4ff] to-[#ecfeff]'}`}>
+      {/* Animated ambient orbs */}
+      {!showCalling && (
+        <>
+          <motion.div
+            aria-hidden
+            animate={{ x: [0, 30, -15, 0], y: [0, -25, 15, 0], scale: [1, 1.08, 0.96, 1] }}
+            transition={{ duration: 14, repeat: Infinity, ease: 'easeInOut' }}
+            className="pointer-events-none absolute -top-24 -right-24 h-96 w-96 rounded-full bg-blue-400/20 blur-3xl"
+          />
+          <motion.div
+            aria-hidden
+            animate={{ x: [0, -25, 20, 0], y: [0, 20, -20, 0], scale: [1, 0.94, 1.06, 1] }}
+            transition={{ duration: 16, repeat: Infinity, ease: 'easeInOut' }}
+            className="pointer-events-none absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-teal-400/20 blur-3xl"
+          />
+        </>
+      )}
+
       {/* Triage Card */}
-      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-2xl rounded-3xl border border-slate-200/80 bg-white/95 backdrop-blur-xl overflow-hidden text-slate-900 shadow-[0_24px_80px_rgba(15,23,42,0.10)]'}`}>
+      <motion.div
+        initial={{ opacity: 0, y: 18, scale: 0.98 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-2xl rounded-[2rem] border border-white/80 bg-white/95 backdrop-blur-2xl overflow-hidden text-slate-900 shadow-[0_30px_90px_rgba(15,23,42,0.12)]'}`}
+      >
         {!showCalling && (
-          <div className="bg-gradient-to-r from-[#123c68] via-[#155b86] to-[#168b91] px-6 sm:px-9 py-6 text-white">
-            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-teal-200">Live Interpretation Desk</p>
-            <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-white">
+          <div className="relative overflow-hidden bg-gradient-to-r from-[#0f294a] via-[#155b86] to-[#14919b] px-6 sm:px-9 py-6 text-white">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-white/15 border border-white/20">
+                  <Languages className="w-4 h-4 text-teal-200" />
+                </span>
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-teal-200">Live Interpretation Desk</p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-400/20 border border-emerald-300/30 px-2.5 py-1 text-[10px] font-bold text-emerald-100">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-300" />
+                </span>
+                Ready
+              </span>
+            </div>
+            <h1 className="mt-3 text-2xl sm:text-3xl font-black tracking-tight text-white">
               Request an Interpreter
             </h1>
             <p className="text-xs sm:text-sm text-white/80 mt-1 font-medium">
@@ -496,64 +535,72 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
                 <ChevronDown className={`w-4 h-4 text-slate-400 absolute right-3 top-3.5 transition-transform ${sourceOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {sourceOpen && (
-                <div className="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl border border-slate-200 bg-white shadow-xl overflow-hidden">
-                  <div className="p-2 border-b border-slate-100 bg-slate-50/70">
-                    <div className="relative">
-                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
-                      <input
-                        type="text"
-                        autoFocus
-                        value={sourceSearch}
-                        onChange={(e) => setSourceSearch(e.target.value)}
-                        placeholder="Search language..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
+              <AnimatePresence>
+                {sourceOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -6, scale: 0.98 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute left-0 right-0 mt-1.5 z-40 rounded-2xl border border-slate-200 bg-white shadow-2xl overflow-hidden"
+                  >
+                    <div className="p-2 border-b border-slate-100 bg-slate-50/70">
+                      <div className="relative">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                        <input
+                          type="text"
+                          autoFocus
+                          value={sourceSearch}
+                          onChange={(e) => setSourceSearch(e.target.value)}
+                          placeholder="Search language..."
+                          className="w-full pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
                     </div>
-                  </div>
-                  <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
-                    {filteredSourceLanguages.map((lang) => {
-                      const selected = lang.code === sourceLanguage;
-                      return (
+                    <div className="max-h-56 overflow-y-auto p-1.5 space-y-0.5">
+                      {filteredSourceLanguages.map((lang) => {
+                        const selected = lang.code === sourceLanguage;
+                        return (
+                          <button
+                            key={lang.code}
+                            type="button"
+                            onClick={() => {
+                              handleSourceLanguageChange(lang.code);
+                              setSourceOpen(false);
+                              setSourceSearch('');
+                            }}
+                            className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
+                              selected ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
+                            }`}
+                          >
+                            <span className="truncate">{lang.name} ({lang.nativeName})</span>
+                            {selected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                      {('uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) || !sourceSearch.trim()) && (
                         <button
-                          key={lang.code}
                           type="button"
                           onClick={() => {
-                            handleSourceLanguageChange(lang.code);
+                            handleSourceLanguageChange('unknown');
                             setSourceOpen(false);
                             setSourceSearch('');
                           }}
                           className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
-                            selected ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
+                            sourceLanguage === 'unknown' ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
                           }`}
                         >
-                          <span className="truncate">{lang.name} ({lang.nativeName})</span>
-                          {selected && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
+                          <span>Uncertain / Other Dialect</span>
+                          {sourceLanguage === 'unknown' && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                         </button>
-                      );
-                    })}
-                    {('uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) || !sourceSearch.trim()) && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          handleSourceLanguageChange('unknown');
-                          setSourceOpen(false);
-                          setSourceSearch('');
-                        }}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between cursor-pointer transition-colors ${
-                          sourceLanguage === 'unknown' ? 'bg-blue-50 text-blue-700' : 'text-slate-800 hover:bg-slate-100'
-                        }`}
-                      >
-                        <span>Uncertain / Other Dialect</span>
-                        {sourceLanguage === 'unknown' && <Check className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
-                      </button>
-                    )}
-                    {filteredSourceLanguages.length === 0 && !'uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) && (
-                      <p className="px-3 py-3 text-xs text-slate-400 text-center">No matching language found.</p>
-                    )}
-                  </div>
-                </div>
-              )}
+                      )}
+                      {filteredSourceLanguages.length === 0 && !'uncertain / other dialect'.includes(sourceSearch.trim().toLowerCase()) && (
+                        <p className="px-3 py-3 text-xs text-slate-400 text-center">No matching language found.</p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Staff Language Dropdown */}
@@ -598,42 +645,48 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
               Call Preference
             </label>
             <div className="grid grid-cols-2 gap-3">
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setCallMode('audio')}
-                className={`h-12 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer ${
+                className={`h-14 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
                   callMode === 'audio'
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/25'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50/40'
                 }`}
               >
                 <PhoneCall className="w-4 h-4" />
                 <span>Audio Call</span>
                 {callMode === 'audio' && <Check className="w-3.5 h-3.5 ml-0.5" />}
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
                 type="button"
+                whileHover={{ y: -2 }}
+                whileTap={{ scale: 0.98 }}
                 onClick={() => setCallMode('video')}
-                className={`h-12 rounded-xl border font-bold text-xs flex items-center justify-center gap-2 transition cursor-pointer ${
+                className={`h-14 rounded-2xl border-2 font-bold text-xs flex items-center justify-center gap-2.5 transition-all cursor-pointer ${
                   callMode === 'video'
-                    ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-slate-300 text-slate-600 hover:bg-slate-50'
+                    ? 'bg-blue-600 border-blue-600 text-white shadow-lg shadow-blue-600/25'
+                    : 'bg-white border-slate-200 text-slate-600 hover:border-blue-200 hover:bg-blue-50/40'
                 }`}
               >
                 <Video className="w-4 h-4" />
                 <span>Video Call</span>
                 {callMode === 'video' && <Check className="w-3.5 h-3.5 ml-0.5" />}
-              </button>
+              </motion.button>
             </div>
           </div>
 
           {/* Connect with Interpreter Button */}
           <div className="pt-2">
-            <button
+            <motion.button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              whileHover={{ scale: 1.01, y: -1 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full h-13 rounded-2xl bg-gradient-to-r from-[#123c68] via-blue-600 to-teal-600 hover:from-[#0f3358] hover:via-blue-500 hover:to-teal-500 text-white font-extrabold text-sm transition-all shadow-xl shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isSubmitting ? (
                 <>
@@ -646,12 +699,12 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
-            </button>
+            </motion.button>
           </div>
         </form>
         )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
