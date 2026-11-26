@@ -851,7 +851,25 @@ def assignment_respond(request: HttpRequest, assignment_id: str) -> JsonResponse
             )
 
         if req_item and dispatch.pending_ring_count(req_item.reference) == 0:
-            dispatch.on_ring_exhausted(req_item)
+            rejected_ids = set(
+                Assignment.objects.filter(
+                    request_reference=req_item.reference, outcome="rejected"
+                ).values_list("interpreter_id", flat=True)
+            )
+            all_candidates = (
+                dispatch.find_candidates(req_item, loose=False, include_offline=False)
+                or dispatch.find_candidates(req_item, loose=True, include_offline=False)
+                or dispatch.find_candidates(req_item, loose=False, include_offline=True)
+                or dispatch.find_candidates(req_item, loose=True, include_offline=True)
+            )
+            unrejected = [c for c in all_candidates if c.id not in rejected_ids]
+            if not unrejected:
+                dispatch.hold_unanswered(req_item, "Call declined by interpreter")
+                InterpretationSession.objects.filter(request_reference=req_item.reference).exclude(
+                    status__in=("completed", "cancelled")
+                ).update(status="cancelled")
+            else:
+                dispatch.on_ring_exhausted(req_item)
     return JsonResponse({"success": True, "message": "Assignment rejected"})
 
 

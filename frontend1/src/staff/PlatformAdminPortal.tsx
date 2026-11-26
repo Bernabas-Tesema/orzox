@@ -303,8 +303,8 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
   );
 
   return (
-    <div className="min-h-[calc(100vh-190px)] overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/5 flex">
-      <aside className="hidden w-60 shrink-0 flex-col bg-[#17213a] text-slate-100 md:flex">
+    <div className="min-h-[calc(100vh-120px)] w-full bg-white flex">
+      <aside className="hidden w-64 shrink-0 flex-col bg-[#0f172a] text-slate-100 md:flex border-r border-slate-800">
         <div className="flex h-20 items-center gap-3 px-5 border-b border-white/10">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-950/30">
             <ShieldCheck className="h-5 w-5" />
@@ -428,22 +428,42 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
         </div>
 
         {/* Summary KPI Cards */}
-        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organizations</p>
-            <p className="mt-1 text-2xl font-black text-slate-900">{registeredOrgs.length}</p>
+        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organizations</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{registeredOrgs.length}</p>
+            </div>
+            <div className="h-11 w-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+              <Building2 className="h-5 w-5" />
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Interpreters</p>
-            <p className="mt-1 text-2xl font-black text-slate-900">{interpreters.length}</p>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Interpreters</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{interpreters.length}</p>
+            </div>
+            <div className="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <Users className="h-5 w-5" />
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Languages</p>
-            <p className="mt-1 text-2xl font-black text-slate-900">{languages.filter((l) => l.isActive).length}</p>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Languages</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{languages.filter((l) => l.isActive).length}</p>
+            </div>
+            <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center">
+              <Languages className="h-5 w-5" />
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Audit Logs</p>
-            <p className="mt-1 text-2xl font-black text-slate-900">{auditLogs.length}</p>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Audit Logs</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{auditLogs.length}</p>
+            </div>
+            <div className="h-11 w-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
+              <Lock className="h-5 w-5" />
+            </div>
           </div>
         </div>
 

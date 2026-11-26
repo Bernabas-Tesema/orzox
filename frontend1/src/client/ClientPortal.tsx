@@ -273,8 +273,8 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
   ];
 
   return (
-    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-      <div className="min-h-[calc(100vh-190px)] overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/5 flex flex-col md:flex-row">
+    <div className="w-full flex-1 flex">
+      <div className="min-h-[calc(100vh-66px)] w-full bg-white flex flex-col md:flex-row">
         {/* Left Sidebar Menu Bar */}
         <aside className="w-full md:w-64 shrink-0 bg-[#17213a] text-slate-100 flex flex-col">
           <div className="p-5 border-b border-white/10">

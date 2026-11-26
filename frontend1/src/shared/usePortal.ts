@@ -142,23 +142,51 @@ export function usePortal() {
   }, [refreshData, currentUser?.role]);
 
   // Extra lightweight pending-assignment poll for interpreters (incoming ring).
+  const acceptedBySelfRef = useRef(false);
+  const endedBySelfRef = useRef<string | null>(null);
+  const lastPendingInterpRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (currentUser?.role !== 'interpreter') return;
+    if (currentUser?.role !== 'interpreter') {
+      lastPendingInterpRef.current = null;
+      return;
+    }
     let stopped = false;
     const tick = async () => {
       try {
         const asgRes = await api.getAssignments();
         if (stopped) return;
         const pending = asgRes.assignments.filter((item) => item.outcome === 'pending');
-        if (!pending.length) return;
-        setAssignments((prev) => {
-          const others = prev.filter((item) => item.outcome !== 'pending');
-          const byId = new Map<string, Assignment>();
-          [...others, ...asgRes.assignments].forEach((item) => byId.set(item.id, item));
-          return Array.from(byId.values()).sort(
-            (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime(),
-          );
-        });
+        if (pending.length) {
+          lastPendingInterpRef.current = pending[0].requestReference;
+          acceptedBySelfRef.current = false;
+          setAssignments((prev) => {
+            const others = prev.filter((item) => item.outcome !== 'pending');
+            const byId = new Map<string, Assignment>();
+            [...others, ...asgRes.assignments].forEach((item) => byId.set(item.id, item));
+            return Array.from(byId.values()).sort(
+              (a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime(),
+            );
+          });
+          return;
+        }
+        // Clear pending assignments when none remain
+        setAssignments((prev) => prev.map((a) => (a.outcome === 'pending' ? { ...a, outcome: 'expired' } : a)));
+        const prevRef = lastPendingInterpRef.current;
+        if (prevRef) {
+          lastPendingInterpRef.current = null;
+          if (acceptedBySelfRef.current) {
+            acceptedBySelfRef.current = false;
+          } else {
+            const detail = await api.getRequestDetail(prevRef).catch(() => null);
+            if (!stopped && detail?.request?.status === 'cancelled') {
+              setCallDeclinedInfo({
+                message: 'The caller declined or cancelled the incoming call.',
+              });
+            }
+            refreshData();
+          }
+        }
       } catch {
         // ignore transient poll errors
       }
@@ -169,7 +197,7 @@ export function usePortal() {
       stopped = true;
       window.clearInterval(timer);
     };
-  }, [currentUser?.role]);
+  }, [currentUser?.role, refreshData]);
 
   // Poll for new meeting invitations (staff only, platform_admin hosted)
   useEffect(() => {
@@ -438,6 +466,9 @@ export function usePortal() {
     response: 'accepted' | 'rejected',
     reason?: string
   ) => {
+    if (response === 'accepted') {
+      acceptedBySelfRef.current = true;
+    }
     const res = await api.respondToAssignment(assignmentId, response, reason);
     if (response === 'accepted' && res.session?.id) setActiveSessionRoomId(res.session.id);
     refreshData(); // fire and forget — don't await so the room opens immediately
@@ -480,6 +511,7 @@ export function usePortal() {
   };
 
   const handleEndSession = async (sessionId: string) => {
+    endedBySelfRef.current = sessionId;
     await api.endSession(sessionId);
     await refreshData();
   };
@@ -611,6 +643,13 @@ export function usePortal() {
     setPendingCompletionSessionIds,
     callDeclinedInfo,
     setCallDeclinedInfo,
+    consumeEndedBySelf: (sessionId: string) => {
+      if (endedBySelfRef.current === sessionId) {
+        endedBySelfRef.current = null;
+        return true;
+      }
+      return false;
+    },
     feedbackModalSessionId,
     setFeedbackModalSessionId,
     isOrzoSupportOpen,
