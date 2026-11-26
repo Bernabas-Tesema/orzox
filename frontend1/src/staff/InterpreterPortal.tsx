@@ -454,13 +454,13 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
       <p className="text-xs font-bold uppercase tracking-wider text-white/70">
         Platform status: <span className="text-white">{detectedStatus}</span>
       </p>
-      <div className="rounded-2xl border border-white/15 bg-gradient-to-r from-white/10 to-white/5 p-4">
+      <div className="rounded-2xl border border-white/15 bg-white/[0.08] backdrop-blur-md p-4 shadow-lg">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/50">Availability</p>
             <p className="mt-1 text-sm font-black text-white">{detectedStatus}</p>
           </div>
-          <div className="flex rounded-xl border border-white/15 bg-slate-950/30 p-1">
+          <div className="flex rounded-xl border border-white/15 bg-slate-950/40 p-1">
             {([
               ['available', 'Available'],
               ['busy', 'Busy'],
@@ -470,13 +470,13 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
                 key={status}
                 type="button"
                 onClick={() => onToggleAvailability(status)}
-                className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold cursor-pointer ${
+                className={`rounded-lg px-2.5 py-1.5 text-[10px] font-bold cursor-pointer transition-colors ${
                   profile.availability === status
                     ? status === 'available'
-                      ? 'bg-emerald-500 text-white'
+                      ? 'bg-emerald-500 text-white shadow-sm'
                       : status === 'busy'
-                        ? 'bg-amber-500 text-slate-950'
-                        : 'bg-slate-600 text-white'
+                        ? 'bg-amber-500 text-slate-950 shadow-sm'
+                        : 'bg-slate-600 text-white shadow-sm'
                     : 'text-white/60 hover:bg-white/10 hover:text-white'
                 }`}
               >
@@ -518,8 +518,8 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
           );
         })}
       </div>
-      <div>
-        <label className="block text-xs font-bold text-white/90 uppercase tracking-wider mb-2">Your rating</label>
+      <div className="rounded-2xl border border-white/15 bg-white/[0.06] backdrop-blur-md p-4">
+        <label className="block text-[11px] font-bold text-white/70 uppercase tracking-wider mb-2">Your rating</label>
         <div className="flex items-center gap-1.5">
           {[1, 2, 3, 4, 5].map((n) => (
             <Star key={n} className={`w-5 h-5 ${n <= Math.round(profile.rating) ? 'text-amber-300 fill-amber-300' : 'text-white/25'}`} />
@@ -531,7 +531,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
       <section className="space-y-5 overflow-auto">
 
       {pendingAssignment && (
-        <div className="rounded-2xl border border-amber-300/40 bg-white/10 p-5 space-y-4">
+        <div className="rounded-3xl border border-amber-300/40 bg-white/[0.09] backdrop-blur-md p-6 space-y-4 shadow-2xl">
           <div className="flex flex-wrap items-center gap-2">
             <span className="bg-amber-400 text-gray-950 font-black text-[10px] px-2 py-0.5 rounded-md uppercase tracking-wider">
               Incoming request

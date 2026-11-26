@@ -244,7 +244,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
 
       <OrgReport range={historyRange} />
 
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-900/5 overflow-hidden">
         <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/70">
           <div>
             <h2 className="text-sm font-bold text-gray-900">

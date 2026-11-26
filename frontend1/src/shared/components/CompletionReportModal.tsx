@@ -51,7 +51,7 @@ export const CompletionReportModal: React.FC<CompletionReportModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-200">
         <div className="flex items-center space-x-2 pb-3 border-b border-gray-200">
           <FileCheck className="w-5 h-5 text-emerald-700" />

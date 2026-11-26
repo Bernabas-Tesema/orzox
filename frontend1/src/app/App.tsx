@@ -164,6 +164,8 @@ export default function App() {
         onChangeLocale={portal.setLocale}
         activeSessionId={activeSessionForUser}
         onJoinActiveSession={(sessionId) => portal.setActiveSessionRoomId(sessionId)}
+        pendingCompletionSessionIds={portal.pendingCompletionSessionIds}
+        onOpenPendingCompletion={(sessionId) => portal.setCompletionModalSessionId(sessionId)}
         onLogout={portal.handleLogout}
       />
 
@@ -217,6 +219,8 @@ export default function App() {
             if (currentUser.role === 'interpreter') portal.refreshData();
           }}
           onTakeWaitingCall={portal.handleTakeWaitingCall}
+          pendingCompletionSessionIds={portal.pendingCompletionSessionIds}
+          onOpenPendingCompletion={(sessionId) => portal.setCompletionModalSessionId(sessionId)}
         />
       )}
 

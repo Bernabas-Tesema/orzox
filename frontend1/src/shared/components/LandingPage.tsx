@@ -116,16 +116,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
           </div>
         </section>
 
-        <section id="services" className="mx-auto max-w-[1380px] px-5 pb-14 lg:px-8">
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section id="services" className="mx-auto max-w-[1380px] px-5 pb-16 lg:px-8">
+          <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {services.map((service) => (
-              <article key={service.title} className="group rounded-[1.5rem] border border-slate-200 bg-white p-6 shadow-sm hover:-translate-y-1 hover:border-violet-200 hover:shadow-xl">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-[#6D4AFF]">
+              <article key={service.title} className="group relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:border-violet-300 hover:shadow-xl hover:shadow-violet-100/60">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 text-[#6D4AFF] ring-1 ring-violet-100 transition-colors group-hover:bg-[#6D4AFF] group-hover:text-white">
                   <service.icon className="h-6 w-6" />
                 </div>
-                <h2 className="mt-5 text-lg font-black">{service.title}</h2>
+                <h2 className="mt-5 text-lg font-black text-slate-900">{service.title}</h2>
                 <p className="mt-2 min-h-12 text-sm leading-6 text-slate-500">{service.text}</p>
-                <button type="button" onClick={onLogin} className="mt-4 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-[#6D4AFF] group-hover:bg-[#6D4AFF] group-hover:text-white" aria-label={`Request ${service.title}`}>
+                <button type="button" onClick={onLogin} className="mt-4 flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-[#6D4AFF] transition-colors group-hover:border-[#6D4AFF] group-hover:bg-[#6D4AFF] group-hover:text-white cursor-pointer" aria-label={`Request ${service.title}`}>
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </article>
@@ -139,10 +139,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onLogin }) => {
               <p className="text-sm font-black uppercase tracking-[0.24em] text-violet-300">How it works</p>
               <h2 className="mt-3 text-3xl font-black sm:text-4xl">Three steps to clear communication</h2>
             </div>
-            <div className="mt-12 grid gap-5 md:grid-cols-3">
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
               {steps.map((step, index) => (
-                <article key={step.title} className="rounded-[1.5rem] border border-white/10 bg-white/5 p-7">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[#6D4AFF] text-sm font-black">{index + 1}</div>
+                <article key={step.title} className="rounded-3xl border border-white/10 bg-white/[0.06] p-7 backdrop-blur-sm transition-colors hover:border-violet-400/40 hover:bg-white/[0.09]">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#6D4AFF] text-sm font-black shadow-lg shadow-violet-950/50">{index + 1}</div>
                   <h3 className="mt-5 text-xl font-black">{step.title}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-300">{step.text}</p>
                 </article>

@@ -1767,11 +1767,16 @@ def support_identify(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["GET"])
 def waiting_calls(request: HttpRequest) -> JsonResponse:
-    """Requests that currently have at least one live (non-expired) pending assignment
-    still within their countdown window. Never returns unresolved/old unanswered calls."""
+    """Requests that are ringing or queued (all matching interpreters busy).
+    Filtered by the requesting interpreter's domain (service_category) and languages.
+    Excludes any request already accepted/assigned to an interpreter."""
     account = _account_from_request(request)
     if not account:
         return _error("Sign in required", 401)
+
+    interp = None
+    if account.role == "interpreter":
+        interp = Interpreter.objects.filter(email__iexact=account.email).first()
 
     now = timezone.now()
     # Only assignments that are pending AND not yet expired
@@ -1790,10 +1795,29 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
     qs = InterpretationRequest.objects.filter(
         reference__in=live_refs,
         status__in=["matching", "assigned"],
+        assigned_interpreter_id__isnull=True,
     ).order_by("created_at")
+
+    # Exclude requests whose session is already ready_to_join or active
+    taken_refs = set(
+        InterpretationSession.objects.filter(
+            request_reference__in=live_refs,
+            status__in=["ready_to_join", "active", "completed", "cancelled"],
+        ).values_list("request_reference", flat=True)
+    )
 
     results = []
     for req in qs:
+        if req.reference in taken_refs:
+            continue
+
+        # Filter to the interpreter's domain (service category) and languages
+        if interp is not None:
+            if not dispatch.category_match(interp, req.service_category):
+                continue
+            if not dispatch.language_match(interp, req.source_language, req.target_language):
+                continue
+
         # Find the assignment with the latest expires_at for this request
         asg = (
             Assignment.objects.filter(
@@ -1805,7 +1829,7 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
             .first()
         )
         if not asg:
-            # No available interpreter accepted yet: show as a queued call.
+            # All matching interpreters are busy: show as a queued call.
             data = _request_json(req)
             data["assignmentExpiresAt"] = None
             data["assignmentId"] = None
@@ -1823,59 +1847,81 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
 @csrf_exempt
 @require_http_methods(["POST"])
 def take_waiting_call(request: HttpRequest, reference: str) -> JsonResponse:
-    """Interpreter takes a waiting call — ends their current session first."""
+    """Interpreter takes a waiting call — ends their current session first and
+    atomically claims the waiting call so other interpreters cannot also take it."""
     account = _account_from_request(request)
     if not account or account.role != "interpreter":
         return _error("Interpreter access required", 403)
-
-    req_item = InterpretationRequest.objects.filter(pk=reference).first()
-    if not req_item:
-        return _error("Request not found", 404)
-    if req_item.status in ("completed", "cancelled", "in_session"):
-        return _error(f"Cannot take request in status: {req_item.status}")
 
     interp = Interpreter.objects.filter(email__iexact=account.email).first()
     if not interp:
         return _error("Interpreter profile not found", 404)
 
-    # End interpreter's current session if any
-    current_sessions = InterpretationSession.objects.filter(
-        interpreter_id=interp.id
-    ).exclude(status__in=["completed", "cancelled"])
-    for sess in current_sessions:
-        sess.status = "completed"
-        sess.save(update_fields=["status"])
-        InterpretationRequest.objects.filter(active_session_id=sess.id).update(
-            status="completed", updated_at=timezone.now()
+    with transaction.atomic():
+        req_item = (
+            InterpretationRequest.objects.select_for_update()
+            .filter(pk=reference)
+            .first()
+        )
+        if not req_item:
+            return _error("Request not found", 404)
+        if req_item.status in ("completed", "cancelled", "in_session"):
+            return _error(f"Cannot take request in status: {req_item.status}", 409)
+        if req_item.assigned_interpreter_id and req_item.assigned_interpreter_id != interp.id:
+            return _error("This waiting call was already taken by another interpreter", 409)
+
+        # End interpreter's current session(s) if any and remember the first/latest one
+        previous_session_id = None
+        current_sessions = InterpretationSession.objects.filter(
+            interpreter_id=interp.id
+        ).exclude(status__in=["completed", "cancelled"])
+        for sess in current_sessions:
+            if not previous_session_id:
+                previous_session_id = sess.id
+            sess.status = "completed"
+            sess.save(update_fields=["status"])
+            InterpretationRequest.objects.filter(active_session_id=sess.id).update(
+                status="completed", updated_at=timezone.now()
+            )
+
+        # Expire any old pending assignments for this request so no other interpreter rings
+        Assignment.objects.filter(request_reference=reference, outcome="pending").update(
+            outcome="expired", responded_at=timezone.now()
         )
 
-    # Free the interpreter
-    Interpreter.objects.filter(email__iexact=account.email).update(availability="available")
-    interp.refresh_from_db()
+        # Claim the request for this interpreter
+        assignment = dispatch.create_assignment(req_item, interp, reason="Taken from waiting queue", manual=True)
+        assignment.outcome = "accepted"
+        assignment.responded_at = timezone.now()
+        assignment.save(update_fields=["outcome", "responded_at"])
 
-    # Expire any old pending assignments for this request
-    Assignment.objects.filter(request_reference=reference, outcome="pending").update(
-        outcome="expired", responded_at=timezone.now()
-    )
+        session = dispatch.create_or_update_session(req_item, interp)
+        session.status = "ready_to_join"
+        session.save(update_fields=["status"])
 
-    # Assign to this interpreter
-    req_item.status = "assigned"
-    req_item.updated_at = timezone.now()
-    req_item.save(update_fields=["status", "updated_at"])
+        req_item.assigned_interpreter_id = interp.id
+        req_item.assigned_interpreter_name = interp.full_name
+        req_item.active_session_id = session.id
+        req_item.status = "assigned"
+        req_item.updated_at = timezone.now()
+        req_item.save(
+            update_fields=[
+                "assigned_interpreter_id",
+                "assigned_interpreter_name",
+                "active_session_id",
+                "status",
+                "updated_at",
+            ]
+        )
 
-    assignment = dispatch.create_assignment(req_item, interp, reason="Taken from waiting queue", manual=True)
-    session = dispatch.create_or_update_session(req_item, interp)
-    session.status = "ready_to_join"
-    session.save(update_fields=["status"])
-
-    interp.availability = "busy"
-    interp.save(update_fields=["availability"])
+        Interpreter.objects.filter(email__iexact=account.email).update(availability="busy")
 
     return JsonResponse(
         {
             "success": True,
             "session": _session_json(session),
             "assignment": assignment.to_api(),
+            "previousSessionId": previous_session_id,
             "message": f"Taken call {reference}",
         }
     )

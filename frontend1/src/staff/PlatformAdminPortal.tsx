@@ -303,7 +303,7 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
   );
 
   return (
-    <div className="min-h-[calc(100vh-190px)] overflow-hidden rounded-[1.75rem] border border-slate-200 bg-white shadow-sm flex">
+    <div className="min-h-[calc(100vh-190px)] overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/5 flex">
       <aside className="hidden w-60 shrink-0 flex-col bg-[#17213a] text-slate-100 md:flex">
         <div className="flex h-20 items-center gap-3 px-5 border-b border-white/10">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-950/30">
@@ -421,9 +421,29 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             <option value="settings">Configuration</option>
             <option value="audit">Audit Logs</option>
           </select>
-          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-500 sm:flex">
+          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-xs sm:flex">
             <ShieldCheck className="h-4 w-4 text-emerald-600" />
             <span className="font-bold">Secure admin session</span>
+          </div>
+        </div>
+
+        {/* Summary KPI Cards */}
+        <div className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organizations</p>
+            <p className="mt-1 text-2xl font-black text-slate-900">{registeredOrgs.length}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Interpreters</p>
+            <p className="mt-1 text-2xl font-black text-slate-900">{interpreters.length}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Languages</p>
+            <p className="mt-1 text-2xl font-black text-slate-900">{languages.filter((l) => l.isActive).length}</p>
+          </div>
+          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Audit Logs</p>
+            <p className="mt-1 text-2xl font-black text-slate-900">{auditLogs.length}</p>
           </div>
         </div>
 

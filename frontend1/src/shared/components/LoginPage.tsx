@@ -27,8 +27,8 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-[#eef4fb] flex items-center justify-center p-4 sm:p-8">
-      <div className="w-full max-w-5xl bg-white rounded-[30px] shadow-[0_24px_70px_rgba(20,54,93,0.18)] overflow-hidden grid lg:grid-cols-[1.05fr_0.95fr]">
+    <div className="min-h-screen bg-gradient-to-br from-[#eef4fb] via-slate-50 to-[#e6f4f3] flex items-center justify-center p-4 sm:p-8">
+      <div className="w-full max-w-5xl bg-white rounded-[30px] border border-slate-200/80 shadow-[0_24px_70px_rgba(20,54,93,0.16)] overflow-hidden grid lg:grid-cols-[1.05fr_0.95fr]">
         <section className="relative min-h-[360px] lg:min-h-[620px] bg-gradient-to-br from-[#123c68] via-[#155b86] to-[#168b91] text-white px-7 py-8 sm:px-12 sm:py-10 overflow-hidden flex flex-col">
           <div className="absolute -left-20 -bottom-24 w-72 h-72 rounded-full bg-[#35b6ae]/30" />
           <div className="absolute right-[-80px] top-[-60px] w-64 h-64 rounded-full border-[34px] border-white/10" />
@@ -44,7 +44,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
             <img
               src="/welcome-illustration.png"
               alt=""
-              className="mt-8 w-40 h-auto self-start opacity-95"
+              className="mt-8 w-40 h-auto self-start opacity-95 drop-shadow-xl"
             />
             <div className="max-w-md pt-7">
               <p className="text-sm font-bold uppercase tracking-[0.22em] text-[#a6eee4]">ORZO staff portal</p>
@@ -52,10 +52,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
               <p className="mt-4 text-sm sm:text-base text-white/80 leading-relaxed">
                 Connect hospitals, courts, immigration desks, and public services with trusted interpreters across Ethiopia.
               </p>
-              <div className="mt-7 grid gap-3 text-xs font-medium text-white/85">
+              <div className="mt-6 grid gap-2.5 text-xs font-medium text-white/90">
                 {['Human-led interpreter coordination', 'Secure, role-based workspaces', 'Support for Ethiopia’s languages'].map((item) => (
-                  <span key={item} className="flex items-center gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-[#a6eee4]" />
+                  <span key={item} className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/10 px-3.5 py-2.5 backdrop-blur-sm">
+                    <CheckCircle2 className="w-4 h-4 text-[#a6eee4] shrink-0" />
                     {item}
                   </span>
                 ))}

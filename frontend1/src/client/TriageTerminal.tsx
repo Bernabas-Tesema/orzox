@@ -60,6 +60,7 @@ function WaitingState({
 
   const fmt = (s: number) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
+  const countdown = Math.max(0, 60 - elapsed);
 
   if (interpreterReady && ringingRequest?.activeSessionId) {
     return (
@@ -126,14 +127,17 @@ function WaitingState({
     <div className="space-y-4 text-white">
       <div className="rounded-2xl border border-blue-500/30 bg-slate-900/80 px-5 py-6 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <span className="relative flex h-3 w-3 shrink-0">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-60 animate-ping" style={{ animationDuration: '1.5s' }} />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500" />
+          <span className="inline-flex items-center gap-2 rounded-full bg-blue-600/25 border border-blue-400/40 px-3 py-1.5 text-xs font-extrabold uppercase tracking-wider text-blue-200">
+            <span className="relative flex h-2.5 w-2.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75 animate-ping" style={{ animationDuration: '1.2s' }} />
+              <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-blue-400" />
+            </span>
+            <PhoneCall className="w-3.5 h-3.5 text-blue-300 animate-pulse" />
+            {attempt === 2 ? 'Ringing (Attempt 2)' : 'Ringing…'}
           </span>
-          <p className="text-xs font-bold uppercase tracking-wider text-blue-300">
-            {attempt === 2 ? 'Second attempt — ringing interpreters…' : 'Ringing interpreters…'}
-          </p>
-          <span className="ml-auto font-mono text-sm font-black text-white">{fmt(elapsed)}</span>
+          <span className="ml-auto font-mono text-lg font-black tabular-nums text-amber-300" title="Countdown timer">
+            {fmt(countdown)}
+          </span>
         </div>
         <h2 className="mt-4 text-xl font-black text-white leading-snug">
           Locating an available interpreter
@@ -303,15 +307,15 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   }, [phoneRinging]);
 
   return (
-    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-slate-950' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 rounded-[2rem] border border-slate-800 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),transparent_35%),linear-gradient(135deg,#0f172a,#172554,#0f172a)] shadow-inner'}`}>
+    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),transparent_40%),linear-gradient(135deg,#020617,#0f172a_60%,#020617)]' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40'}`}>
       {/* Triage Card */}
-      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-lg rounded-[1.75rem] border border-white/70 bg-white/95 p-7 sm:p-10 text-slate-900 space-y-6 shadow-[0_24px_80px_rgba(15,23,42,0.38)] backdrop-blur-xl'}`}>
+      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-xl rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-9 text-slate-900 space-y-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]'}`}>
         {!showCalling && (
-          <div>
+          <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 px-5 py-4">
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
               Request an Interpreter
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-slate-600 mt-1 font-medium">
               {currentUser.organizationName || 'Tikur Anbessa Specialized Hospital (Addis Ababa)'}
             </p>
           </div>
@@ -366,47 +370,50 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
           />
         ) : (
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Patient Language Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              {workplaceLanguageLabel(workplace)}
-            </label>
-            <div className="relative">
-              <select
-                value={sourceLanguage}
-                onChange={(e) => setSourceLanguage(e.target.value)}
-                className="w-full h-12 px-4 pr-10 text-sm font-medium border border-slate-300 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition cursor-pointer"
-              >
-                {activeLanguages.map((lang) => (
-                  <option key={lang.code} value={lang.code} className="bg-white text-slate-900">
-                    {lang.name} ({lang.nativeName})
+          {/* Languages Card */}
+          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-4 grid gap-4 sm:grid-cols-2">
+            {/* Patient Language Dropdown */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                {workplaceLanguageLabel(workplace)}
+              </label>
+              <div className="relative">
+                <select
+                  value={sourceLanguage}
+                  onChange={(e) => setSourceLanguage(e.target.value)}
+                  className="w-full h-11 px-3.5 pr-9 text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer shadow-xs"
+                >
+                  {activeLanguages.map((lang) => (
+                    <option key={lang.code} value={lang.code} className="bg-white text-slate-900">
+                      {lang.name} ({lang.nativeName})
+                    </option>
+                  ))}
+                  <option value="unknown" className="bg-white text-slate-900">
+                    Uncertain / Other Dialect
                   </option>
-                ))}
-                <option value="unknown" className="bg-white text-slate-900">
-                  Uncertain / Other Dialect
-                </option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-4 pointer-events-none" />
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
+              </div>
             </div>
-          </div>
 
-          {/* Staff Language Dropdown */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-              Staff Language
-            </label>
-            <div className="relative">
-              <select
-                value={targetLanguage}
-                onChange={(e) => setTargetLanguage(e.target.value)}
-                className="w-full h-12 px-4 pr-10 text-sm font-medium border border-slate-300 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition cursor-pointer"
-              >
-                <option value="amh" className="bg-white text-slate-900">Amharic (አማርኛ)</option>
-                <option value="eng" className="bg-white text-slate-900">English</option>
-                <option value="orm" className="bg-white text-slate-900">Oromo (Afaan Oromoo)</option>
-                <option value="tir" className="bg-white text-slate-900">Tigrinya (ትግርኛ)</option>
-              </select>
-              <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-4 pointer-events-none" />
+            {/* Staff Language Dropdown */}
+            <div>
+              <label className="block text-[11px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Staff Language
+              </label>
+              <div className="relative">
+                <select
+                  value={targetLanguage}
+                  onChange={(e) => setTargetLanguage(e.target.value)}
+                  className="w-full h-11 px-3.5 pr-9 text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer shadow-xs"
+                >
+                  <option value="amh" className="bg-white text-slate-900">Amharic (አማርኛ)</option>
+                  <option value="eng" className="bg-white text-slate-900">English</option>
+                  <option value="orm" className="bg-white text-slate-900">Oromo (Afaan Oromoo)</option>
+                  <option value="tir" className="bg-white text-slate-900">Tigrinya (ትግርኛ)</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
+              </div>
             </div>
           </div>
 

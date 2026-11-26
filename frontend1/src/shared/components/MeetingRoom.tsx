@@ -505,7 +505,8 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
       </div>
 
       {/* Control Bar */}
-      <div className="z-10 flex items-center justify-center gap-3 border-t border-white/10 p-4">
+      <div className="z-10 flex items-center justify-center p-4 pb-5">
+        <div className="flex items-center justify-center gap-3 rounded-2xl border border-white/15 bg-slate-900/85 backdrop-blur-xl px-5 py-3 shadow-2xl">
         <button
           onClick={handleToggleMute}
           className={`p-3 rounded-xl transition-all cursor-pointer ${
@@ -542,6 +543,7 @@ export const MeetingRoom: React.FC<MeetingRoomProps> = ({
               : (meeting.creatorId === currentUser.id ? 'End Meeting' : 'Leave Meeting')}
           </span>
         </button>
+        </div>
       </div>
     </div>
   );

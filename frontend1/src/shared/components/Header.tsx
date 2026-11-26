@@ -9,7 +9,8 @@ import {
   Activity,
   PhoneCall,
   LogOut,
-  Monitor
+  Monitor,
+  FileCheck,
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -22,6 +23,8 @@ interface HeaderProps {
   onChangeLocale: (locale: string) => void;
   activeSessionId?: string;
   onJoinActiveSession?: (sessionId: string) => void;
+  pendingCompletionSessionIds?: string[];
+  onOpenPendingCompletion?: (sessionId: string) => void;
   onLogout?: () => void;
 }
 
@@ -35,6 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
   onChangeLocale,
   activeSessionId,
   onJoinActiveSession,
+  pendingCompletionSessionIds = [],
+  onOpenPendingCompletion,
   onLogout,
 }) => {
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -86,6 +91,27 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
       <div className="h-0.5 w-full bg-gradient-to-r from-[#6D4AFF] via-violet-400 to-[#F59E0B]" />
+
+      {/* Pending First-Session Completion Report Banner */}
+      {currentUser.role === 'interpreter' && pendingCompletionSessionIds.length > 0 && onOpenPendingCompletion && (
+        <div className="bg-amber-500 text-slate-950 px-4 py-2 text-xs md:text-sm font-semibold flex items-center justify-between shadow-inner">
+          <div className="flex items-center space-x-2">
+            <FileCheck className="w-4 h-4 shrink-0" />
+            <span>
+              <strong>Session Report Pending:</strong> Complete the report for session {pendingCompletionSessionIds[0]}
+              {pendingCompletionSessionIds.length > 1 ? ` (+${pendingCompletionSessionIds.length - 1} more)` : ''}.
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => onOpenPendingCompletion(pendingCompletionSessionIds[0])}
+            className="bg-slate-950 text-amber-300 px-3 py-1 rounded-md text-xs font-bold hover:bg-slate-900 transition-colors flex items-center shadow-xs cursor-pointer"
+          >
+            <FileCheck className="w-3.5 h-3.5 mr-1.5" />
+            Complete Report
+          </button>
+        </div>
+      )}
 
       {/* Active Session Global Alert Banner */}
       {activeSessionId && (

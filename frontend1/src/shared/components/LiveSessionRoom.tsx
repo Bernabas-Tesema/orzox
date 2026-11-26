@@ -26,6 +26,7 @@ import {
   User as UserIcon,
   CheckCircle2,
   AlertCircle,
+  FileCheck,
 } from 'lucide-react';
 
 interface LiveSessionRoomProps {
@@ -36,6 +37,8 @@ interface LiveSessionRoomProps {
   onCallFinished?: (sessionId: string) => void;
   onOpenCompletionModal: (sessionId: string) => void;
   onTakeWaitingCall?: (reference: string) => Promise<void>;
+  pendingCompletionSessionIds?: string[];
+  onOpenPendingCompletion?: (sessionId: string) => void;
 }
 
 export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
@@ -46,6 +49,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   onCallFinished,
   onOpenCompletionModal,
   onTakeWaitingCall,
+  pendingCompletionSessionIds = [],
+  onOpenPendingCompletion,
 }) => {
   const isVideoMode = session.communicationMode === 'video';
 
@@ -577,8 +582,23 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Center / Right stats: Duration & LiveKit Status */}
+        {/* Center / Right stats: Pending Report, Duration & LiveKit Status */}
         <div className="flex items-center space-x-3">
+          {currentUser.role === 'interpreter' && pendingCompletionSessionIds.length > 0 && onOpenPendingCompletion && (
+            <button
+              type="button"
+              onClick={() => onOpenPendingCompletion(pendingCompletionSessionIds[0])}
+              className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs shadow-md cursor-pointer transition-colors"
+              title={`Fill completion report for previous session ${pendingCompletionSessionIds[0]}`}
+            >
+              <FileCheck className="w-4 h-4 shrink-0" />
+              <span>
+                Report {pendingCompletionSessionIds[0]}
+                {pendingCompletionSessionIds.length > 1 ? ` (+${pendingCompletionSessionIds.length - 1})` : ''}
+              </span>
+            </button>
+          )}
+
           {/* Duration Pill */}
           <div className="flex items-center space-x-1.5 bg-slate-900/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-sm">
             <Clock className="w-4 h-4 text-cyan-400" />
@@ -700,8 +720,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           )}
 
           {/* Control Bar */}
-          <div className="flex-shrink-0 p-3 pb-4">
-            <div className="bg-slate-900/80 backdrop-blur-md border border-white/10 rounded-2xl px-4 py-3 flex items-center justify-center gap-4 shadow-xl max-w-lg mx-auto">
+          <div className="flex-shrink-0 p-3 pb-5">
+            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-3 flex items-center justify-center gap-4 shadow-2xl max-w-lg mx-auto">
               <button onClick={handleToggleMute} className={`p-3 rounded-xl cursor-pointer transition-all ${isMuted ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-slate-100 border border-white/10'}`} title={isMuted ? 'Unmute' : 'Mute'}>
                 {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
@@ -738,16 +758,22 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
                 const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : null;
                 if (secondsLeft !== null && secondsLeft === 0) return null;
+                const waitedSeconds = call.createdAt
+                  ? Math.max(0, Math.floor((Date.now() - new Date(call.createdAt).getTime()) / 1000))
+                  : 0;
                 const urgent = secondsLeft !== null && secondsLeft <= 10;
                 return (
                   <div key={call.reference} className={`rounded-xl border p-3 space-y-2 ${urgent ? 'bg-red-950/50 border-red-500/50' : 'bg-slate-800/80 border-slate-700/50'}`}>
-                    {/* Ref + badge */}
+                    {/* Ref + live timer badge */}
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-xs text-slate-300 font-bold">{call.reference}</span>
                       {secondsLeft !== null ? (
-                        <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
+                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
                       ) : (
-                        <span className="text-[10px] bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded font-bold">Queued</span>
+                        <span className="text-[10px] font-mono bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {formatTimer(waitedSeconds)}
+                        </span>
                       )}
                     </div>
                     {/* Caller name */}

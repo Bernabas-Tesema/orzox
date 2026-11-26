@@ -43,6 +43,7 @@ export function usePortal() {
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [activeSessionRoomId, setActiveSessionRoomId] = useState<string | null>(null);
   const [completionModalSessionId, setCompletionModalSessionId] = useState<string | null>(null);
+  const [pendingCompletionSessionIds, setPendingCompletionSessionIds] = useState<string[]>([]);
   const [feedbackModalSessionId, setFeedbackModalSessionId] = useState<string | null>(null);
   const [isOrzoSupportOpen, setIsOrzoSupportOpen] = useState(false);
   const [preselectedSourceLanguage, setPreselectedSourceLanguage] = useState<string | null>(null);
@@ -212,14 +213,27 @@ export function usePortal() {
   // Client must start from the intake form; do not auto-open the call room.
   // Join is explicit via the Join button once an interpreter accepts.
 
-  // Auto-join: when a client's request moves to in_session, open the room automatically.
-  // Auto-join: when a client's request moves to in_session, open the room automatically.
+  // Fast-poll while a client is ringing/waiting so auto-join triggers immediately on accept.
+  const clientHasWaitingRequest =
+    currentUser?.role === 'client' &&
+    requests.some(
+      (r) =>
+        r.requesterId === currentUser.id &&
+        ['submitted', 'validating', 'matching', 'assigned'].includes(r.status),
+    );
+  useEffect(() => {
+    if (!clientHasWaitingRequest) return;
+    const timer = window.setInterval(refreshData, 2000);
+    return () => window.clearInterval(timer);
+  }, [clientHasWaitingRequest, refreshData]);
+
+  // Auto-join: when a client's request is accepted (assigned) or in_session, move both parties to the call room.
   const autoJoinedSessions = useRef(new Set<string>());
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'client') return;
     for (const request of requests) {
       if (request.requesterId !== currentUser.id) continue;
-      if (request.status !== 'in_session' || !request.activeSessionId) continue;
+      if (!['assigned', 'in_session'].includes(request.status) || !request.activeSessionId) continue;
       if (autoJoinedSessions.current.has(request.activeSessionId)) continue;
       if (activeSessionRoomId === request.activeSessionId) continue;
       autoJoinedSessions.current.add(request.activeSessionId);
@@ -453,7 +467,7 @@ export function usePortal() {
   }) => {
     await api.submitCompletion(data);
     setCompletionModalSessionId(null);
-    setActiveSessionRoomId(null);
+    setPendingCompletionSessionIds((prev) => prev.filter((id) => id !== data.sessionId));
     await refreshData();
   };
 
@@ -473,7 +487,14 @@ export function usePortal() {
 
   // ── Waiting calls ──
   const handleTakeWaitingCall = async (reference: string) => {
+    const prevRoomId = activeSessionRoomId;
     const res = await api.takeWaitingCall(reference);
+    const firstSessionId = res.previousSessionId || prevRoomId;
+    if (firstSessionId && firstSessionId !== res.session.id) {
+      setPendingCompletionSessionIds((prev) =>
+        prev.includes(firstSessionId) ? prev : [...prev, firstSessionId],
+      );
+    }
     setSessions((prev) => {
       const others = prev.filter((s) => s.id !== res.session.id);
       return [res.session, ...others];
@@ -559,6 +580,8 @@ export function usePortal() {
     setActiveSessionRoomId,
     completionModalSessionId,
     setCompletionModalSessionId,
+    pendingCompletionSessionIds,
+    setPendingCompletionSessionIds,
     feedbackModalSessionId,
     setFeedbackModalSessionId,
     isOrzoSupportOpen,

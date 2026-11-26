@@ -526,6 +526,7 @@ export const api = {
     success: boolean;
     session: InterpretationSession;
     assignment: Assignment;
+    previousSessionId?: string | null;
     message: string;
   }> {
     return request(`/waiting-calls/${reference}/take`, { method: 'POST' });
