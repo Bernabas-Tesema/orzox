@@ -712,10 +712,10 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
               Clear History
             </button>
           </div>
-          {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).map((call) => {
+          {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).slice(0, 1).map((call) => {
             const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
             const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : 0;
-            const isMissed = !call.queued && expiresAt > 0 && secondsLeft === 0;
+            const isMissed = !call.queued && secondsLeft <= 0;
             return (
               <div
                 key={call.reference}

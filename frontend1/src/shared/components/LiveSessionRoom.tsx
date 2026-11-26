@@ -713,69 +713,56 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       {/* Main Workspace Body — stage left, incoming call + chat right */}
       <div className="flex-1 flex overflow-hidden z-10">
 
-        {/* Left: Participant Strip + Main Video/Audio Stage + Controls */}
+        {/* Left: Side-by-Side Client & Interpreter (Left & Right) + Controls */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 gap-3">
-          {/* Top Participant Thumbnail Strip (Local + Remote mini cards) */}
-          <div className="grid grid-cols-2 gap-3 h-28 sm:h-32 flex-shrink-0">
-            {/* Local (You) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+          {/* 2-Column Side-by-Side Call Boxes (Left: You, Right: Other Party) */}
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-0">
+            {/* Left Box: Local (You) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-[200px]">
               <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
               {isVideoOff && (
-                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-900">
-                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
-                    <UserIcon className="w-5 h-5 text-cyan-300" />
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-slate-900">
+                  <div className="w-20 h-20 rounded-2xl bg-cyan-950/80 border border-cyan-700/50 flex items-center justify-center">
+                    <UserIcon className="w-10 h-10 text-cyan-300" />
                   </div>
+                  <span className="text-xs font-semibold text-slate-300">
+                    {isMuted ? <span className="text-red-400">Muted</span> : 'Camera Off'}
+                  </span>
                 </div>
               )}
-              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-white flex items-center gap-1.5">
-                <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 z-10">
+                <span className={`w-2 h-2 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
                 <span>{currentUser.fullName} ({currentUser.role === 'interpreter' ? 'Interpreter' : 'You'})</span>
-                {isMuted && <MicOff className="w-3 h-3 text-red-400" />}
+                {isMuted && <MicOff className="w-3.5 h-3.5 text-red-400" />}
               </div>
             </div>
 
-            {/* Remote summary card */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
-              <div className="flex items-center gap-3 px-4">
-                <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
-                  <Volume2 className="w-5 h-5 text-emerald-300" />
+            {/* Right Box: Remote (Client / Interpreter) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-[200px]">
+              <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+              {!hasRemoteVideo && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+                  <div className="w-20 h-20 rounded-2xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center">
+                    <Volume2 className="w-10 h-10 text-emerald-300" />
+                  </div>
+                  <div className="flex items-end gap-1 h-6">
+                    {[0.4,0.7,1.0,0.6,0.8,0.5,0.9].map((h, i) => (
+                      <span key={i} className="w-1 rounded-full bg-emerald-400 animate-bounce" style={{ height: `${Math.round(h*20)}px`, animationDelay: `${i*0.1}s`, animationDuration: '0.9s' }} />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                    Live Audio
+                  </span>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-xs font-bold text-white truncate">{remoteParticipantName || session.interpreterName || 'Participant'}</p>
-                  <p className="text-[11px] text-emerald-300 font-semibold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {hasRemoteVideo ? 'Video Active' : 'Live Audio'}
-                    {remoteIsMuted && ' · Muted'}
-                  </p>
-                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 z-10">
+                <span className="w-2 h-2 rounded-full bg-cyan-400" />
+                <span>{remoteParticipantName || (currentUser.role === 'interpreter' ? session.clientName : session.interpreterName) || 'Participant'}</span>
+                {remoteIsMuted && <MicOff className="w-3.5 h-3.5 text-red-400" />}
               </div>
-            </div>
-          </div>
-
-          {/* Main Large Stage (Remote Video / Audio Waveform) */}
-          <div className="flex-1 relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-0">
-            <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-            {!hasRemoteVideo && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-                <div className="w-24 h-24 rounded-3xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center">
-                  <Volume2 className="w-12 h-12 text-emerald-300" />
-                </div>
-                <div className="flex items-end gap-1 h-7">
-                  {[0.4,0.7,1.0,0.6,0.8,0.5,0.9].map((h, i) => (
-                    <span key={i} className="w-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ height: `${Math.round(h*24)}px`, animationDelay: `${i*0.1}s`, animationDuration: '0.9s' }} />
-                  ))}
-                </div>
-                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  Live Audio Interpretation
-                </span>
-              </div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
-            <div className="absolute bottom-3 left-3 bg-black/65 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs font-semibold text-white flex items-center gap-2 z-10">
-              <span className="w-2 h-2 rounded-full bg-emerald-400" />
-              <span>{remoteParticipantName || session.interpreterName || 'Interpreter'}</span>
-              {remoteIsMuted && <MicOff className="w-3.5 h-3.5 text-red-400" />}
             </div>
           </div>
 
