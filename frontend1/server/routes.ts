@@ -2015,22 +2015,29 @@ router.get('/staff', (req: Request, res: Response) => {
 router.get('/waiting-calls', (req: Request, res: Response) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const interp = user.role === 'interpreter' ? db.interpreters.find((i) => i.userId === user.id) : null;
   const waiting = db.requests
-    .filter((r) => r.status === 'submitted' || r.status === 'pending_matching' || r.status === 'assigned')
+    .filter((r) => ['submitted', 'matching', 'pending_coordinator', 'assigned'].includes(r.status) && !r.assignedInterpreterId)
+    .filter((r) => {
+      if (!interp) return true;
+      const catMatch = !interp.serviceCategories.length || interp.serviceCategories.includes(r.serviceCategory);
+      const langCodes = new Set(interp.supportedLanguages.map((l) => l.languageCode.toLowerCase()));
+      const langMatch =
+        !langCodes.size ||
+        r.isUnknownLanguage ||
+        langCodes.has(r.sourceLanguage.toLowerCase()) ||
+        langCodes.has(r.targetLanguage.toLowerCase());
+      return catMatch && langMatch;
+    })
     .map((r) => {
+      const sess = db.sessions.find((s) => s.requestReference === r.reference);
+      if (sess && ['ready_to_join', 'active', 'completed', 'cancelled'].includes(sess.status)) return null;
       const pendingAsgs = db.assignments
         .filter((a) => a.requestReference === r.reference && a.outcome === 'pending')
         .sort((a, b) => new Date(b.assignedAt).getTime() - new Date(a.assignedAt).getTime());
       const liveAsg = pendingAsgs.find((a) => new Date(a.expiresAt).getTime() > Date.now());
-      // If request is assigned but all assignments have expired, skip it
-      if (r.status === 'assigned' && pendingAsgs.length > 0 && !liveAsg) return null;
-      // If there is a live assignment, include with its expiry
       if (liveAsg) return { ...r, assignmentExpiresAt: liveAsg.expiresAt, queued: false };
-      // submitted/pending_matching with no assignment yet — show as queued
-      if (r.status === 'submitted' || r.status === 'pending_matching') {
-        return { ...r, assignmentExpiresAt: null, queued: true };
-      }
-      return null;
+      return { ...r, assignmentExpiresAt: null, queued: true };
     })
     .filter(Boolean);
   res.json({ waitingCalls: waiting });
