@@ -928,15 +928,18 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               {visibleWaiting.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-                const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : null;
-                const isMissed = secondsLeft !== null && secondsLeft <= 0;
+                const createdMs = call.createdAt ? new Date(call.createdAt).getTime() : Date.now();
+                const secondsLeft = expiresAt
+                  ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+                  : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
+                const isMissed = secondsLeft <= 0;
                 return (
                   <div key={call.reference} className={`rounded-xl border-2 p-3 space-y-2 shadow-xs transition-colors ${isMissed ? 'border-red-500 bg-red-100/90' : 'border-emerald-400 bg-emerald-50/70'}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-[11px] text-slate-800 font-bold">{call.reference}</span>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-md ${isMissed ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
-                          {secondsLeft !== null ? `${secondsLeft}s` : 'Waiting'}
+                          {secondsLeft}s
                         </span>
                         <button
                           type="button"
