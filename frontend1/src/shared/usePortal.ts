@@ -461,6 +461,7 @@ export function usePortal() {
   };
 
   const handleToggleAvailability = async (availability: 'available' | 'busy' | 'offline') => {
+    setInterpreterProfile((prev) => (prev ? { ...prev, availability } : prev));
     await api.updateAvailability(availability);
     await refreshData();
   };

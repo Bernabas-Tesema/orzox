@@ -687,15 +687,19 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
         </div>
       )}
 
-      {!pendingAssignment && !profile.activeSessionId && !showMissedCall && waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length === 0 && (
+      {!pendingAssignment && !profile.activeSessionId && !showMissedCall && (!isOnline || waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length === 0) && (
         <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
-          <p className="text-sm font-bold">Waiting for a request</p>
-          <p className="mt-1 text-xs text-white/70">When a client starts a request, every free matching interpreter rings at once. Answer first to take the call.</p>
+          <p className="text-sm font-bold">{isOnline ? 'Waiting for a request' : 'You are currently Offline'}</p>
+          <p className="mt-1 text-xs text-white/70">
+            {isOnline
+              ? 'When a client starts a request, every free matching interpreter rings at once. Answer first to take the call.'
+              : 'Turn the Availability toggle ON to receive incoming interpretation requests.'}
+          </p>
         </div>
       )}
 
-      {/* Compact waiting call cards — green while active, red + Missed Call when time ends */}
-      {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length > 0 && !pendingAssignment && (
+      {/* Compact waiting call cards — only shown when interpreter is ON (Online) */}
+      {isOnline && waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length > 0 && !pendingAssignment && (
         <div className="space-y-2.5">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
