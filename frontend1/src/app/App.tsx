@@ -202,6 +202,7 @@ export default function App() {
 
       {portal.activeSessionRoomId && currentLiveSession && (
         <LiveSessionRoom
+          key={currentLiveSession.id}
           session={currentLiveSession}
           currentUser={currentUser}
           onEndSession={portal.handleEndSession}

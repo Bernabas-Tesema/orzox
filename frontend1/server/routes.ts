@@ -2098,12 +2098,26 @@ router.post('/waiting-calls/:reference/take', (req: Request, res: Response) => {
 
   const request = db.requests.find((r) => r.reference === req.params.reference);
   if (!request) return res.status(404).json({ error: 'Request not found.' });
-  if (!['submitted', 'pending_matching', 'assigned'].includes(request.status)) {
+  if (!['submitted', 'matching', 'pending_matching', 'pending_coordinator', 'assigned'].includes(request.status)) {
     return res.status(400).json({ error: 'This call is no longer available.' });
   }
 
   const interp = db.interpreters.find((i) => i.userId === user.id);
   if (!interp) return res.status(400).json({ error: 'No interpreter profile found.' });
+
+  // Abort interpreter's active session(s) before starting the new session
+  let previousSessionId: string | undefined;
+  for (const s of db.sessions) {
+    if (s.interpreterId === interp.id && s.requestReference !== request.reference && !['completed', 'cancelled'].includes(s.status)) {
+      if (!previousSessionId) previousSessionId = s.id;
+      s.status = 'cancelled';
+      const prevReq = db.requests.find((r) => r.activeSessionId === s.id);
+      if (prevReq) {
+        prevReq.status = 'cancelled';
+        prevReq.updatedAt = new Date().toISOString();
+      }
+    }
+  }
 
   // Create assignment
   const assignment: Assignment = {
@@ -2157,7 +2171,7 @@ router.post('/waiting-calls/:reference/take', (req: Request, res: Response) => {
   interp.availability = 'busy';
 
   schedulePortalPersist();
-  res.json({ success: true, session, assignment, message: 'Call taken.' });
+  res.json({ success: true, session, assignment, previousSessionId, message: 'Call taken.' });
 });
 
 export default router;

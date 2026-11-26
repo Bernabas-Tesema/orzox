@@ -1983,18 +1983,23 @@ def take_waiting_call(request: HttpRequest, reference: str) -> JsonResponse:
         if req_item.assigned_interpreter_id and req_item.assigned_interpreter_id != interp.id:
             return _error("This waiting call was already taken by another interpreter", 409)
 
-        # End interpreter's current session(s) if any and remember the first/latest one
+        # Abort interpreter's current session(s) if any and remember the first/latest one
         previous_session_id = None
-        current_sessions = InterpretationSession.objects.filter(
-            interpreter_id=interp.id
-        ).exclude(status__in=["completed", "cancelled"])
+        current_sessions = (
+            InterpretationSession.objects.filter(interpreter_id=interp.id)
+            .exclude(request_reference=reference)
+            .exclude(status__in=["completed", "cancelled"])
+        )
+        now = timezone.now()
         for sess in current_sessions:
             if not previous_session_id:
                 previous_session_id = sess.id
-            sess.status = "completed"
+            sess.status = "cancelled"
             sess.save(update_fields=["status"])
             InterpretationRequest.objects.filter(active_session_id=sess.id).update(
-                status="completed", updated_at=timezone.now()
+                status="cancelled",
+                cancellation_reason="Aborted: interpreter took another call",
+                updated_at=now,
             )
 
         # Expire any old pending assignments for this request so no other interpreter rings
