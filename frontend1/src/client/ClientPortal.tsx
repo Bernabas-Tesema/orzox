@@ -576,11 +576,13 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
                       }}
                       className="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white"
                     >
-                      {activeLanguages.map((lang) => (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name} ({lang.nativeName})
-                        </option>
-                      ))}
+                      {activeLanguages
+                        .filter((lang) => lang.code !== targetLanguage)
+                        .map((lang) => (
+                          <option key={lang.code} value={lang.code}>
+                            {lang.name} ({lang.nativeName})
+                          </option>
+                        ))}
                     </select>
                   </div>
 

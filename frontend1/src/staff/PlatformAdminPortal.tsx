@@ -399,23 +399,6 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             </button>
           ))}
         </nav>
-
-        {/* Bottom Sidebar Highlight Card */}
-        <div className="p-3.5">
-          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm space-y-3">
-            <p className="text-[11px] font-medium text-blue-100 leading-relaxed">
-              Manage organizations, accredited interpreters, and live operations.
-            </p>
-            <button
-              type="button"
-              onClick={() => setActiveTab('dashboard')}
-              className="w-full rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#1a3378] hover:bg-blue-50 flex items-center justify-between cursor-pointer shadow-sm"
-            >
-              <span>View Statistics</span>
-              <BarChart3 className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        </div>
       </aside>
 
       <main className="min-w-0 flex-1 flex flex-col overflow-auto bg-[#f5f7fb]">
@@ -435,11 +418,11 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 md:hidden">
             <select
               value={activeTab}
               onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 md:hidden"
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700"
               aria-label="Admin section"
             >
               <option value="dashboard">Dashboard</option>
@@ -451,15 +434,6 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
               <option value="settings">Configuration</option>
               <option value="audit">Audit Logs</option>
             </select>
-            <div className="hidden sm:flex items-center gap-2.5 pl-2">
-              <div className="h-9 w-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
-                {currentUser.fullName ? currentUser.fullName.slice(0, 2).toUpperCase() : 'AD'}
-              </div>
-              <div className="text-left leading-tight">
-                <p className="text-xs font-bold text-slate-900">{currentUser.fullName}</p>
-                <p className="text-[10px] font-semibold text-slate-400">Platform Admin</p>
-              </div>
-            </div>
           </div>
         </div>
 

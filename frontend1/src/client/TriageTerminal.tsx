@@ -309,6 +309,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
 
   const activeLanguages = languages.filter((l) => l.isActive);
   const filteredSourceLanguages = activeLanguages.filter((lang) => {
+    if (lang.code === targetLanguage) return false;
     const q = sourceSearch.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -401,19 +402,21 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   }, [phoneRinging]);
 
   return (
-    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),transparent_40%),linear-gradient(135deg,#020617,#0f172a_60%,#020617)]' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/40'}`}>
+    <div className={`relative w-full flex items-center justify-center overflow-hidden ${showCalling ? 'min-h-screen bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.18),transparent_40%),linear-gradient(135deg,#020617,#0f172a_60%,#020617)]' : 'min-h-[calc(100vh-140px)] p-4 sm:p-8 bg-[radial-gradient(circle_at_top_right,_rgba(37,99,235,0.10),transparent_45%),radial-gradient(circle_at_bottom_left,_rgba(20,184,166,0.10),transparent_45%),linear-gradient(135deg,#f8fafc,#eef4ff_50%,#f0fdfa)]'}`}>
       {/* Triage Card */}
-      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-xl rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-9 text-slate-900 space-y-6 shadow-[0_20px_60px_rgba(15,23,42,0.08)]'}`}>
+      <div className={`relative z-10 w-full ${showCalling ? 'max-w-md px-4 py-8' : 'max-w-2xl rounded-3xl border border-slate-200/80 bg-white/95 backdrop-blur-xl overflow-hidden text-slate-900 shadow-[0_24px_80px_rgba(15,23,42,0.10)]'}`}>
         {!showCalling && (
-          <div className="rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50/80 to-indigo-50/60 px-5 py-4">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+          <div className="bg-gradient-to-r from-[#123c68] via-[#155b86] to-[#168b91] px-6 sm:px-9 py-6 text-white">
+            <p className="text-[10px] font-extrabold uppercase tracking-[0.22em] text-teal-200">Live Interpretation Desk</p>
+            <h1 className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-white">
               Request an Interpreter
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-white/80 mt-1 font-medium">
               {currentUser.organizationName || 'Tikur Anbessa Specialized Hospital (Addis Ababa)'}
             </p>
           </div>
         )}
+        <div className={showCalling ? '' : 'p-6 sm:p-8 space-y-6'}>
 
         {error && !showCalling && (
           <div className="p-3.5 bg-red-50 border border-red-200 rounded-xl text-red-700 text-xs flex items-center gap-2">
@@ -630,7 +633,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
+              className="w-full h-12 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-extrabold text-sm transition-all shadow-lg shadow-blue-600/25 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60"
             >
               {isSubmitting ? (
                 <>
@@ -647,6 +650,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
           </div>
         </form>
         )}
+        </div>
       </div>
     </div>
   );
