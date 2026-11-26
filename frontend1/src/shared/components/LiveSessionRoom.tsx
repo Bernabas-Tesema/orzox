@@ -27,7 +27,18 @@ import {
   CheckCircle2,
   AlertCircle,
   FileCheck,
+  Send,
+  MessageSquare,
+  Users,
 } from 'lucide-react';
+
+interface ChatMessageItem {
+  id: string;
+  senderId: string;
+  senderName: string;
+  text: string;
+  timestamp: string;
+}
 
 interface LiveSessionRoomProps {
   session: InterpretationSession;
@@ -74,8 +85,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [remoteIsMuted, setRemoteIsMuted] = useState<boolean>(false);
   const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
   const [takingCall, setTakingCall] = useState<string | null>(null);
-  // Live countdown ticker â€” increments every second to force sidebar re-renders
+  // Live countdown ticker — increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
+  // Right-side Live Session Chat
+  const [rightTab, setRightTab] = useState<'chat' | 'participants'>('chat');
+  const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef<HTMLDivElement | null>(null);
 
   // DOM Refs
   const localVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -351,6 +367,27 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           setRemoteAudioLevel(0);
           setRemoteIsMuted(false);
         });
+
+        room.on(RoomEvent.DataReceived, (payload: Uint8Array, participant?: RemoteParticipant) => {
+          if (!active) return;
+          try {
+            const decoded = JSON.parse(new TextDecoder().decode(payload));
+            if (decoded?.type === 'chat' && decoded?.text) {
+              setChatMessages((prev) => [
+                ...prev,
+                {
+                  id: decoded.id || `${Date.now()}-${Math.random()}`,
+                  senderId: decoded.senderId || participant?.identity || 'remote',
+                  senderName: decoded.senderName || participant?.name || 'Participant',
+                  text: String(decoded.text),
+                  timestamp: decoded.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                },
+              ]);
+            }
+          } catch {
+            // ignore non-chat data packets
+          }
+        });
         await room.connect(tokenRes.url, tokenRes.token, { autoSubscribe: true });
         if (!active) return;
 
@@ -484,7 +521,34 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     }
   };
 
-  // End Call â€” disconnect media first, then notify backend.
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [chatMessages]);
+
+  const handleSendChat = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = chatInput.trim();
+    if (!text) return;
+    const msg: ChatMessageItem = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      senderId: currentUser.id,
+      senderName: currentUser.fullName,
+      text,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    };
+    setChatMessages((prev) => [...prev, msg]);
+    setChatInput('');
+    try {
+      if (roomRef.current?.localParticipant) {
+        const bytes = new TextEncoder().encode(JSON.stringify({ type: 'chat', ...msg }));
+        await roomRef.current.localParticipant.publishData(bytes, { reliable: true });
+      }
+    } catch {
+      // ignore if disconnected
+    }
+  };
+
+  // End Call — disconnect media first, then notify backend.
   // A network hiccup on the backend call must never strand the user in the room.
   const handleEndCall = async () => {
     if (endingCall) return;
@@ -521,13 +585,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[radial-gradient(circle_at_top,_rgba(37,99,235,0.16),transparent_30%),linear-gradient(135deg,#020617,#0f172a_55%,#020617)] text-white flex flex-col overflow-hidden select-none">
-      {/* Remote Audio Track (Hidden) â€” must autoplay + playsInline for mobile/desktop */}
+    <div className="fixed inset-0 z-50 bg-[#f4f7f9] text-slate-900 flex flex-col overflow-hidden select-none">
+      {/* Remote Audio Track (Hidden) — must autoplay + playsInline for mobile/desktop */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
-      {/* Audio enable overlay â€” browser autoplay policy requires a user gesture */}
+      {/* Audio enable overlay — browser autoplay policy requires a user gesture */}
       {audioBlocked && (
-        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-slate-950/80 backdrop-blur-sm text-white">
           <div className="text-center space-y-4 px-6">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 border border-emerald-400/40">
               <Volume2 className="w-8 h-8 text-emerald-300" />
@@ -546,16 +610,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
       )}
 
-      {/* Clean professional background */}
-      <div className="absolute inset-0 z-0 bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950" />
-
       {/* Top Header Bar */}
-      <div className="relative bg-slate-950/80 backdrop-blur-md border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between z-10">
+      <div className="relative bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between z-10 shadow-xs">
         <div className="flex items-center space-x-3">
           <div
             className={`h-2.5 w-2.5 rounded-full ${
               connectionState === 'connected'
-                ? 'bg-emerald-400'
+                ? 'bg-emerald-500'
                 : connectionState === 'connecting'
                 ? 'bg-amber-400 animate-pulse'
                 : 'bg-slate-400'
@@ -563,19 +624,19 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           />
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm sm:text-base text-white tracking-tight">
+              <span className="font-extrabold text-sm sm:text-base text-slate-900 tracking-tight">
                 Live Interpretation Session
               </span>
-              <span className="text-xs bg-cyan-950/70 text-cyan-300 font-mono px-2 py-0.5 rounded-md border border-cyan-700/50 backdrop-blur-md">
+              <span className="text-xs bg-slate-100 text-slate-700 font-mono px-2.5 py-0.5 rounded-lg border border-slate-200 font-bold">
                 {session.id}
               </span>
-              <span className="text-xs bg-white/10 text-slate-200 px-2 py-0.5 rounded-md border border-white/10 backdrop-blur-md">
+              <span className="hidden sm:inline text-xs bg-slate-100 text-slate-600 px-2.5 py-0.5 rounded-lg border border-slate-200">
                 Ref: {session.requestReference}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5">
               {session.organizationName} • {session.serviceCategory.replace('_', ' ').toUpperCase()} •{' '}
-              <strong className="text-cyan-300">
+              <strong className="text-blue-700">
                 {session.sourceLanguage.toUpperCase()} ⇄ {session.targetLanguage.toUpperCase()}
               </strong>
             </p>
@@ -583,12 +644,12 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
 
         {/* Center / Right stats: Pending Report, Duration & LiveKit Status */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2.5">
           {currentUser.role === 'interpreter' && pendingCompletionSessionIds.length > 0 && onOpenPendingCompletion && (
             <button
               type="button"
               onClick={() => onOpenPendingCompletion(pendingCompletionSessionIds[0])}
-              className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-400 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs shadow-md cursor-pointer transition-colors"
+              className="flex items-center space-x-1.5 bg-amber-400 hover:bg-amber-300 text-slate-950 px-3 py-1.5 rounded-xl font-extrabold text-xs shadow-xs cursor-pointer transition-colors"
               title={`Fill completion report for previous session ${pendingCompletionSessionIds[0]}`}
             >
               <FileCheck className="w-4 h-4 shrink-0" />
@@ -600,32 +661,28 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           )}
 
           {/* Duration Pill */}
-          <div className="flex items-center space-x-1.5 bg-slate-900/60 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10 font-mono text-sm">
-            <Clock className="w-4 h-4 text-cyan-400" />
-            <span className="font-bold text-cyan-300">{formatTimer(duration)}</span>
+          <div className="flex items-center space-x-1.5 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200 font-mono text-xs">
+            <Clock className="w-3.5 h-3.5 text-slate-500" />
+            <span className="font-bold text-slate-800">{formatTimer(duration)}</span>
           </div>
 
-          {/* Connection status (read-only â€” LiveKit keys are server-side only) */}
+          {/* Connection status */}
           <div
-            className={`hidden sm:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border backdrop-blur-md ${
+            className={`hidden sm:flex items-center space-x-1.5 text-xs px-2.5 py-1.5 rounded-xl border ${
               connectionState === 'connected'
-                ? 'bg-emerald-950/60 text-emerald-300 border-emerald-500/40'
-                : 'bg-cyan-950/60 text-cyan-300 border-cyan-500/40'
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'
             }`}
             title="Live media connection"
           >
-            <Signal className="w-3.5 h-3.5 text-cyan-400" />
-            <span>
-              {connectionState === 'connected' ? (
-                <strong className="text-emerald-400">Live Connected</strong>
-              ) : (
-                <span>Connectingâ€¦</span>
-              )}
+            <Signal className="w-3.5 h-3.5" />
+            <span className="font-bold">
+              {connectionState === 'connected' ? 'Live Connected' : 'Connecting…'}
             </span>
           </div>
 
           {/* Security badge */}
-          <div className="hidden md:flex items-center space-x-1.5 text-[11px] bg-slate-900/60 text-slate-400 border border-white/10 px-2.5 py-1 rounded-lg">
+          <div className="hidden md:flex items-center space-x-1.5 text-[11px] bg-slate-100 text-slate-600 border border-slate-200 px-2.5 py-1.5 rounded-xl">
             <Shield className="w-3.5 h-3.5 text-slate-500" />
             <span>Encrypted · No Recording</span>
           </div>
@@ -633,106 +690,114 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           {/* Glossary */}
           <button
             onClick={() => setShowTerminology(!showTerminology)}
-            className="p-2 text-xs bg-white/5 hover:bg-white/10 text-slate-300 rounded-lg border border-white/10 flex items-center space-x-1 cursor-pointer transition"
+            className="p-2 text-xs bg-white hover:bg-slate-100 text-slate-700 rounded-xl border border-slate-200 flex items-center space-x-1 cursor-pointer transition"
             title="Linguistic Glossary"
           >
-            <BookOpen className="w-4 h-4 text-slate-400" />
-            <span className="hidden lg:inline">Glossary</span>
+            <BookOpen className="w-4 h-4 text-slate-500" />
+            <span className="hidden lg:inline font-semibold">Glossary</span>
           </button>
         </div>
       </div>
 
       {/* Connection / permission notices */}
       {connectionNotice && (
-        <div className="bg-slate-900/80 border-b border-white/10 px-4 py-2 text-xs text-slate-300 flex items-center gap-2 z-10">
-          <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+        <div className="bg-amber-50 border-b border-amber-200 px-4 py-2 text-xs text-amber-800 flex items-center gap-2 z-10">
+          <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
           <span className="truncate">{connectionNotice}</span>
         </div>
       )}
 
-      {/* Main Workspace Body — video area left, waiting calls panel right */}
+      {/* Main Workspace Body — stage left, incoming call + chat right */}
       <div className="flex-1 flex overflow-hidden z-10">
 
-        {/* Left: Video + Controls */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          {/* Video Grid */}
-          <div className="flex-1 grid grid-cols-2 gap-3 p-3 sm:p-4 min-h-0">
-
-            {/* Box 1: Local (You) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
-              <div className="absolute inset-0">
-                <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
-              </div>
+        {/* Left: Participant Strip + Main Video/Audio Stage + Controls */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 gap-3">
+          {/* Top Participant Thumbnail Strip (Local + Remote mini cards) */}
+          <div className="grid grid-cols-2 gap-3 h-28 sm:h-32 flex-shrink-0">
+            {/* Local (You) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-200">
+              <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
               {isVideoOff && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
-                  <div className="w-20 h-20 rounded-2xl bg-cyan-950/80 border border-cyan-700/50 flex items-center justify-center">
-                    <UserIcon className="w-10 h-10 text-cyan-300" />
+                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-slate-900">
+                  <div className="w-10 h-10 rounded-xl bg-slate-800 border border-slate-700 flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-cyan-300" />
                   </div>
-                  <span className="text-xs font-semibold text-slate-300">
-                    {isMuted ? <span className="text-red-400">Muted</span> : 'Camera Off'}
-                  </span>
                 </div>
               )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 z-10">
-                <span className={`w-2 h-2 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
+              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-0.5 rounded-lg text-[11px] font-semibold text-white flex items-center gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
                 <span>{currentUser.fullName} ({currentUser.role === 'interpreter' ? 'Interpreter' : 'You'})</span>
                 {isMuted && <MicOff className="w-3 h-3 text-red-400" />}
               </div>
             </div>
 
-            {/* Box 2: Remote */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-xl">
-              <div className="absolute inset-0">
-                <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
-              </div>
-              {!hasRemoteVideo && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10">
-                  <div className="w-20 h-20 rounded-2xl bg-blue-950/80 border border-blue-700/50 flex items-center justify-center">
-                    <Volume2 className="w-10 h-10 text-blue-300" />
-                  </div>
-                  <div className="flex items-end gap-0.5 h-6">
-                    {[0.4,0.7,1.0,0.6,0.8,0.5,0.9].map((h, i) => (
-                      <span key={i} className="w-1 rounded-full bg-cyan-400 animate-bounce" style={{ height: `${Math.round(h*20)}px`, animationDelay: `${i*0.1}s`, animationDuration: '0.9s' }} />
-                    ))}
-                  </div>
-                  <span className="text-xs font-semibold text-cyan-300 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-                    Live Audio
-                  </span>
+            {/* Remote summary card */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-sm border border-slate-200 flex items-center justify-center">
+              <div className="flex items-center gap-3 px-4">
+                <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+                  <Volume2 className="w-5 h-5 text-emerald-300" />
                 </div>
-              )}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute bottom-2 left-2 bg-black/70 backdrop-blur-sm px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 z-10">
-                <span className="w-2 h-2 rounded-full bg-cyan-400" />
-                <span>{remoteParticipantName || session.interpreterName || 'Interpreter'}</span>
-                {remoteIsMuted && <MicOff className="w-3 h-3 text-red-400" />}
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-white truncate">{remoteParticipantName || session.interpreterName || 'Participant'}</p>
+                  <p className="text-[11px] text-emerald-300 font-semibold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                    {hasRemoteVideo ? 'Video Active' : 'Live Audio'}
+                    {remoteIsMuted && ' · Muted'}
+                  </p>
+                </div>
               </div>
+            </div>
+          </div>
+
+          {/* Main Large Stage (Remote Video / Audio Waveform) */}
+          <div className="flex-1 relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-0">
+            <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
+            {!hasRemoteVideo && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+                <div className="w-24 h-24 rounded-3xl bg-emerald-500/15 border border-emerald-400/30 flex items-center justify-center">
+                  <Volume2 className="w-12 h-12 text-emerald-300" />
+                </div>
+                <div className="flex items-end gap-1 h-7">
+                  {[0.4,0.7,1.0,0.6,0.8,0.5,0.9].map((h, i) => (
+                    <span key={i} className="w-1.5 rounded-full bg-emerald-400 animate-bounce" style={{ height: `${Math.round(h*24)}px`, animationDelay: `${i*0.1}s`, animationDuration: '0.9s' }} />
+                  ))}
+                </div>
+                <span className="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
+                  Live Audio Interpretation
+                </span>
+              </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+            <div className="absolute bottom-3 left-3 bg-black/65 backdrop-blur-sm px-3 py-1.5 rounded-xl text-xs font-semibold text-white flex items-center gap-2 z-10">
+              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+              <span>{remoteParticipantName || session.interpreterName || 'Interpreter'}</span>
+              {remoteIsMuted && <MicOff className="w-3.5 h-3.5 text-red-400" />}
             </div>
           </div>
 
           {/* Speakerphone banner */}
           {session.communicationMode === 'phone_assisted' && (
-            <div className="mx-3 mb-2 p-2.5 bg-slate-950/50 border border-cyan-500/30 text-cyan-200 text-xs rounded-xl flex items-center gap-2">
-              <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
+            <div className="p-2.5 bg-cyan-50 border border-cyan-200 text-cyan-900 text-xs rounded-xl flex items-center gap-2">
+              <Radio className="w-4 h-4 text-cyan-600 shrink-0" />
               <span><strong>Speakerphone Mode</strong> — Active on terminal speakerphone.</span>
             </div>
           )}
 
           {/* Control Bar */}
-          <div className="flex-shrink-0 p-3 pb-5">
-            <div className="bg-slate-900/90 backdrop-blur-xl border border-white/15 rounded-2xl px-5 py-3 flex items-center justify-center gap-4 shadow-2xl max-w-lg mx-auto">
-              <button onClick={handleToggleMute} className={`p-3 rounded-xl cursor-pointer transition-all ${isMuted ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-white/10 hover:bg-white/20 text-slate-100 border border-white/10'}`} title={isMuted ? 'Unmute' : 'Mute'}>
+          <div className="flex-shrink-0 flex justify-center">
+            <div className="bg-white border border-slate-200 rounded-2xl px-5 py-2.5 flex items-center justify-center gap-3 shadow-sm">
+              <button onClick={handleToggleMute} className={`p-3 rounded-xl cursor-pointer transition-all ${isMuted ? 'bg-red-600 hover:bg-red-500 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}`} title={isMuted ? 'Unmute' : 'Mute'}>
                 {isMuted ? <MicOff className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
               </button>
-              <button onClick={handleToggleVideo} className={`p-3 rounded-xl cursor-pointer transition-all ${isVideoOff ? 'bg-white/10 hover:bg-white/20 text-slate-300 border border-white/10' : 'bg-emerald-600/80 hover:bg-emerald-500 text-white border border-emerald-400/40'}`} title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
+              <button onClick={handleToggleVideo} className={`p-3 rounded-xl cursor-pointer transition-all ${isVideoOff ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-emerald-600 hover:bg-emerald-500 text-white'}`} title={isVideoOff ? 'Turn on camera' : 'Turn off camera'}>
                 {isVideoOff ? <VideoOff className="w-5 h-5" /> : <VideoIcon className="w-5 h-5" />}
               </button>
-              <button onClick={() => setIsLowBandwidth(!isLowBandwidth)} className={`px-3 py-2 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 ${isLowBandwidth ? 'bg-cyan-500/30 text-cyan-300 border border-cyan-400/50' : 'bg-white/10 text-slate-200 hover:bg-white/20 border border-white/10'}`}>
-                <Wifi className="w-4 h-4 text-cyan-400" />
+              <button onClick={() => setIsLowBandwidth(!isLowBandwidth)} className={`px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 ${isLowBandwidth ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>
+                <Wifi className="w-4 h-4" />
                 <span className="hidden sm:inline">Low-Bandwidth</span>
               </button>
-              <button onClick={handleEndCall} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-lg cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
+              <button onClick={handleEndCall} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
                 <PhoneOff className="w-4 h-4" />
                 <span>{endingCall ? 'Ending...' : 'End Call'}</span>
               </button>
@@ -740,19 +805,20 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           </div>
         </div>
 
-        {/* Right: Calls Waiting Panel (interpreters only, hidden when ending) */}
-        {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
-          <div className="w-72 flex-shrink-0 bg-[#0d1623] border-l border-white/10 flex flex-col overflow-hidden">
-            {/* Panel header */}
-            <div className="p-4 border-b border-white/10 flex-shrink-0">
-              <div className="flex items-center gap-2">
-                <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
-                <span className="text-sm font-black text-white uppercase tracking-wide">Calls Waiting ({waitingCalls.length})</span>
+        {/* Right Sidebar: Incoming / Waiting Calls Card + Live Session Chat */}
+        <aside className="w-80 lg:w-96 flex-shrink-0 bg-white border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden">
+          {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting) */}
+          {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
+            <div className="rounded-2xl border border-red-200 bg-red-50/60 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <PhoneCall className="w-4 h-4 text-red-600 animate-pulse" />
+                  <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
+                    Incoming Call ({waitingCalls.length})
+                  </span>
+                </div>
+                <span className="text-[10px] font-semibold text-slate-500">Current call ends first</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Pick a call below — your current call ends first.</p>
-            </div>
-            {/* Cards */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
               {waitingCalls.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
@@ -763,44 +829,32 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   : 0;
                 const urgent = secondsLeft !== null && secondsLeft <= 10;
                 return (
-                  <div key={call.reference} className={`rounded-xl border p-3.5 space-y-2 ${urgent ? 'bg-red-950/60 border-red-500/60' : 'bg-red-950/30 border-red-500/40'}`}>
-                    {/* Ref + live timer badge */}
+                  <div key={call.reference} className="rounded-xl border border-red-200 bg-white p-3 space-y-2 shadow-xs">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-cyan-400 font-bold">{call.reference}</span>
+                      <span className="font-mono text-[11px] text-blue-700 font-bold">{call.reference}</span>
                       {secondsLeft !== null ? (
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-blue-600/40 text-blue-200'}`}>{secondsLeft}s</span>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${urgent ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-amber-100 text-amber-800'}`}>{secondsLeft}s</span>
                       ) : (
-                        <span className="text-[10px] font-mono bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                        <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-bold">
                           Queued · {formatTimer(waitedSeconds)}
                         </span>
                       )}
                     </div>
-                    {/* Caller name */}
-                    <p className="font-bold text-white text-sm leading-tight truncate">{call.requesterName}</p>
-                    {/* Org */}
-                    <p className="text-[11px] text-slate-400 truncate">{call.organizationName}</p>
-                    {/* Languages + urgency */}
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-cyan-300">{call.sourceLanguage?.toUpperCase()}</span>
-                      <span className="text-slate-500 text-xs">→</span>
-                      <span className="text-xs font-black text-white">{call.targetLanguage?.toUpperCase()}</span>
+                    <p className="font-bold text-slate-900 text-xs leading-tight truncate">{call.requesterName} <span className="font-normal text-slate-500">wants to connect</span></p>
+                    <div className="flex items-center gap-1.5 text-[11px]">
+                      <span className="font-black text-blue-700">{call.sourceLanguage?.toUpperCase()}</span>
+                      <span className="text-slate-400">→</span>
+                      <span className="font-black text-slate-900">{call.targetLanguage?.toUpperCase()}</span>
+                      <span className="text-slate-400">·</span>
+                      <span className="text-slate-500 capitalize truncate">{call.serviceCategory?.replace(/_/g, ' ')}</span>
                       {call.urgency === 'emergency' && (
-                        <span className="ml-auto text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-black uppercase">Emergency</span>
+                        <span className="ml-auto text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Emergency</span>
                       )}
                     </div>
-                    {/* Category */}
-                    <p className="text-[11px] text-slate-400 capitalize">{call.serviceCategory?.replace(/_/g, ' ')}</p>
-                    {/* Countdown bar */}
-                    {expiresAt > 0 && secondsLeft !== null && (
-                      <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
-                        <div className={`h-1 rounded-full transition-all ${urgent ? 'bg-red-400' : 'bg-amber-400'}`} style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }} />
-                      </div>
-                    )}
-                    {/* Take Call button */}
                     <button
                       onClick={() => handleTakeCall(call.reference)}
                       disabled={takingCall === call.reference}
-                      className="w-full py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50 transition-all"
+                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
                     >
                       <PhoneCall className="w-3.5 h-3.5" />
                       {takingCall === call.reference ? 'Connecting...' : 'Take Call'}
@@ -809,8 +863,102 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 );
               })}
             </div>
+          )}
+
+          {/* Bottom Card: Session Chat & Participants (matches reference green-pill style) */}
+          <div className="flex-1 min-h-0 rounded-2xl border border-slate-200 bg-white flex flex-col overflow-hidden shadow-xs">
+            <div className="p-2.5 border-b border-slate-100 grid grid-cols-2 gap-1.5 bg-slate-50/70">
+              <button
+                type="button"
+                onClick={() => setRightTab('chat')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                  rightTab === 'chat' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <MessageSquare className="w-3.5 h-3.5" />
+                <span>Session Chat</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setRightTab('participants')}
+                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                  rightTab === 'participants' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Participants</span>
+              </button>
+            </div>
+
+            {rightTab === 'chat' ? (
+              <>
+                <div className="flex-1 overflow-y-auto p-3 space-y-3">
+                  {chatMessages.length === 0 && (
+                    <div className="text-center py-8 text-xs text-slate-400">
+                      Send a message to the other participant in this session.
+                    </div>
+                  )}
+                  {chatMessages.map((msg) => {
+                    const isMe = msg.senderId === currentUser.id;
+                    return (
+                      <div key={msg.id} className={`flex flex-col ${isMe ? 'items-end' : 'items-start'}`}>
+                        <span className="text-[10px] font-semibold text-slate-400 mb-1 px-1">
+                          {isMe ? 'You' : msg.senderName} · {msg.timestamp}
+                        </span>
+                        <div
+                          className={`max-w-[85%] rounded-2xl px-3.5 py-2 text-xs leading-relaxed ${
+                            isMe
+                              ? 'bg-emerald-600 text-white rounded-br-sm'
+                              : 'bg-slate-100 text-slate-800 rounded-bl-sm'
+                          }`}
+                        >
+                          {msg.text}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div ref={chatEndRef} />
+                </div>
+
+                <form onSubmit={handleSendChat} className="p-2.5 border-t border-slate-100 flex items-center gap-2 bg-slate-50/50">
+                  <input
+                    type="text"
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    placeholder="Type message..."
+                    className="flex-1 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <button
+                    type="submit"
+                    className="h-9 w-9 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center cursor-pointer shrink-0 shadow-xs"
+                    title="Send message"
+                  >
+                    <Send className="w-4 h-4" />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">{currentUser.fullName} (You)</p>
+                    <p className="text-[11px] text-slate-500 capitalize">{currentUser.role}</p>
+                  </div>
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">Connected</span>
+                </div>
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-bold text-slate-900">{remoteParticipantName || session.interpreterName || 'Participant'}</p>
+                    <p className="text-[11px] text-slate-500">{session.organizationName}</p>
+                  </div>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${remoteParticipantName ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+                    {remoteParticipantName ? 'Connected' : 'Waiting'}
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </aside>
 
         {/* Sidebar Glossary */}
         {showTerminology && (
