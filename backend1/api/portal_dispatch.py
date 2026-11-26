@@ -210,17 +210,45 @@ def create_assignment(
     return assignment
 
 
+_LANG_ALIASES = {
+    "oromo": "orm",
+    "afaan oromoo": "orm",
+    "ormogna": "orm",
+    "amharic": "amh",
+    "tigrinya": "tir",
+    "somali": "som",
+    "af-soomaali": "som",
+    "sidama": "sid",
+    "sidaamu afoo": "sid",
+    "wolaytta": "wal",
+    "english": "eng",
+    "arabic": "ara",
+}
+
+
+def _norm_lang(val: str) -> str:
+    text = str(val or "").strip().lower()
+    return _LANG_ALIASES.get(text, text)
+
+
+def _norm_cat(val: str) -> str:
+    text = str(val or "").strip().lower().replace(" ", "_")
+    if text in ("health", "health_center", "hospital"):
+        return "healthcare"
+    return text
+
+
 def _lang_codes(raw) -> set[str]:
     codes: set[str] = set()
     for item in raw or []:
         if isinstance(item, dict):
             code = item.get("languageCode") or item.get("code") or item.get("name")
             if code:
-                codes.add(str(code).lower())
+                codes.add(_norm_lang(str(code)))
         else:
-            text = str(item or "").strip().lower()
-            if text:
-                codes.add(text)
+            norm = _norm_lang(str(item or ""))
+            if norm:
+                codes.add(norm)
     return codes
 
 
@@ -230,23 +258,23 @@ def _category_codes(raw) -> set[str]:
         if isinstance(item, dict):
             code = item.get("category") or item.get("code") or item.get("name")
             if code:
-                cats.add(str(code).lower())
+                cats.add(_norm_cat(str(code)))
         else:
-            text = str(item or "").strip().lower()
-            if text:
-                cats.add(text)
+            norm = _norm_cat(str(item or ""))
+            if norm:
+                cats.add(norm)
     return cats
 
 
 def language_match(interp: Interpreter, source: str, target: str) -> bool:
     codes = _lang_codes(interp.languages)
     if not codes:
-        return True
-    src = (source or "").lower()
-    tgt = (target or "").lower()
+        return False
+    src = _norm_lang(source)
+    tgt = _norm_lang(target)
     if src in ("unknown", ""):
-        return True
-    if len(codes) >= 2 and tgt:
+        return (tgt in codes) if tgt else False
+    if tgt:
         return src in codes and tgt in codes
     return src in codes
 
@@ -254,8 +282,8 @@ def language_match(interp: Interpreter, source: str, target: str) -> bool:
 def category_match(interp: Interpreter, category: str) -> bool:
     cats = _category_codes(interp.categories)
     if not cats:
-        return True
-    return (category or "").lower() in cats
+        return False
+    return _norm_cat(category) in cats
 
 
 def find_candidates(
