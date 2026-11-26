@@ -124,7 +124,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
   useEffect(() => {
     // No audio ring when interpreter is already in an active session —
     // the waiting call cards in the sidebar are shown instead.
-    if (!pendingAssignment || profile.activeSessionId) return;
+    if (!pendingAssignment || profile?.activeSessionId) return;
     const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioContextClass) return;
     const context = new AudioContextClass();
@@ -211,10 +211,10 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
 
   if (!profile) {
     return (
-      <InterpreterShell
-        left={<h1 className="text-2xl font-black tracking-tight text-white">Interpreter desk</h1>}
-        right={<p className="text-sm text-white/70">No interpreter profile is linked to {currentUser.email}.</p>}
-      />
+      <InterpreterShell>
+        <h1 className="text-2xl font-black tracking-tight text-white">Interpreter desk</h1>
+        <p className="text-sm text-white/70">No interpreter profile is linked to {currentUser.email}.</p>
+      </InterpreterShell>
     );
   }
 
@@ -759,9 +759,13 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
 
                 {isMissed ? (
                   <div className="flex items-center justify-between gap-2 pt-1">
-                    <span className="w-full h-9 rounded-xl bg-red-600/80 text-white text-xs font-extrabold flex items-center justify-center">
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full h-9 rounded-xl bg-red-600 text-white text-xs font-extrabold flex items-center justify-center cursor-not-allowed"
+                    >
                       Missed Call
-                    </span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => setClearedWaitingRefs((prev) => [...prev, call.reference])}

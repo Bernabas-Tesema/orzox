@@ -752,12 +752,12 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       {/* Main Workspace Body — stage left, incoming call + chat right */}
       <div className="flex-1 flex overflow-hidden z-10">
 
-        {/* Left: Side-by-Side Client & Interpreter (Left & Right) + Controls */}
+        {/* Left: Framed Caller & Interpreter Side-by-Side + Controls */}
         <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 gap-3">
-          {/* 2-Column Side-by-Side Call Boxes (Left: You, Right: Other Party) */}
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-3 min-h-0">
-            {/* Left Box: Local (You) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-[200px]">
+          {/* 2-Column Framed Call Cards (Left: You, Right: Other Party) */}
+          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+            {/* Left Frame: Local (Caller or Interpreter) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-blue-500/40 ring-1 ring-slate-200 min-h-[220px]">
               <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
               {isVideoOff && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-slate-900">
@@ -769,16 +769,19 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   </span>
                 </div>
               )}
+              <div className="absolute top-3 left-3 bg-blue-600/90 backdrop-blur-sm px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white z-10">
+                {currentUser.role === 'interpreter' ? 'Interpreter (You)' : 'Caller (You)'}
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 z-10">
                 <span className={`w-2 h-2 rounded-full ${isMuted ? 'bg-red-400' : 'bg-emerald-400'}`} />
-                <span>{currentUser.fullName} ({currentUser.role === 'interpreter' ? 'Interpreter' : 'You'})</span>
+                <span>{currentUser.fullName}</span>
                 {isMuted && <MicOff className="w-3.5 h-3.5 text-red-400" />}
               </div>
             </div>
 
-            {/* Right Box: Remote (Client / Interpreter) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 min-h-[200px]">
+            {/* Right Frame: Remote (Interpreter or Caller) */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-emerald-500/40 ring-1 ring-slate-200 min-h-[220px]">
               <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
               {!hasRemoteVideo && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -796,6 +799,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   </span>
                 </div>
               )}
+              <div className="absolute top-3 left-3 bg-emerald-600/90 backdrop-blur-sm px-2.5 py-0.5 rounded-lg text-[10px] font-black uppercase tracking-wider text-white z-10">
+                {currentUser.role === 'interpreter' ? 'Caller' : 'Interpreter'}
+              </div>
               <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent pointer-events-none" />
               <div className="absolute bottom-3 left-3 bg-black/70 backdrop-blur-sm px-3 py-1 rounded-xl text-xs font-semibold text-white flex items-center gap-1.5 z-10">
                 <span className="w-2 h-2 rounded-full bg-cyan-400" />
