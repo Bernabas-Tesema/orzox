@@ -69,6 +69,8 @@ urlpatterns = [
     # Waiting calls queue
     path("waiting-calls", portal_views.waiting_calls),
     path("waiting-calls/", portal_views.waiting_calls),
+    path("waiting-calls/clear", portal_views.clear_waiting_calls),
+    path("waiting-calls/clear/", portal_views.clear_waiting_calls),
     path("waiting-calls/<str:reference>/take", portal_views.take_waiting_call),
     # Staff listing
     path("staff", portal_views.staff_list),

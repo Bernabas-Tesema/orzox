@@ -123,15 +123,17 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
       }
       return next;
     });
+    api.clearWaitingCalls(refs).catch(() => undefined);
   };
 
-  const dismissMissedCard = (id: string) => {
+  const dismissMissedCard = (id: string, requestReference?: string) => {
     setDismissedMissedId(id);
     try {
       localStorage.setItem(`orzo-dismissed-missed-${currentUser.id}`, id);
     } catch {
       // ignore
     }
+    api.clearWaitingCalls(requestReference ? [requestReference] : [], id).catch(() => undefined);
   };
   useEffect(() => {
     if (!profile) return;
@@ -706,7 +708,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
             </div>
             <button
               type="button"
-              onClick={() => dismissMissedCard(missedCall.id)}
+              onClick={() => dismissMissedCard(missedCall.id, missedCall.requestReference)}
               className="text-[11px] font-bold text-white/70 hover:text-white px-2 py-0.5 rounded-lg bg-white/10 cursor-pointer"
             >
               Clear

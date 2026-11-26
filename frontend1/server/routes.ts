@@ -2071,6 +2071,26 @@ router.get('/waiting-calls', (req: Request, res: Response) => {
   res.json({ waitingCalls: waiting });
 });
 
+router.post('/waiting-calls/clear', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user || user.role !== 'interpreter') return res.status(403).json({ error: 'Interpreter access required.' });
+  const refs: string[] = Array.isArray(req.body?.references) ? req.body.references.map(String) : [];
+  const interp = db.interpreters.find((i) => i.userId === user.id);
+  for (const r of db.requests) {
+    if (refs.includes(r.reference) && ['matching', 'pending_coordinator'].includes(r.status)) {
+      r.status = 'unresolved';
+    }
+  }
+  if (interp) {
+    for (const a of db.assignments) {
+      if (a.interpreterId === interp.id && (refs.includes(a.requestReference) || a.outcome === 'expired')) {
+        if (a.outcome !== 'accepted') a.outcome = 'reassigned';
+      }
+    }
+  }
+  res.json({ success: true });
+});
+
 router.post('/waiting-calls/:reference/take', (req: Request, res: Response) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });

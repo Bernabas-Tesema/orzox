@@ -309,14 +309,8 @@ def auth_login(request: HttpRequest) -> JsonResponse:
     if account is None or account.status != "active" or not check_password(password, account.password_hash):
         return _error("Invalid email or password.", 401)
 
-    # Interpreters logging in become available so they can receive direct rings.
-    # Update every profile row for this email (duplicates exist in some installs).
-    # Do NOT exclude "busy" — a previous call may have ended without resetting
-    # availability, leaving the interpreter permanently stuck.
-    if account.role == "interpreter":
-        Interpreter.objects.filter(email__iexact=account.email).exclude(availability="offline").update(
-            availability="available"
-        )
+    # Keep the interpreter's chosen availability (ON/OFF) across logins.
+    # Only the interpreter themselves toggles between online and offline.
 
     token = _open_session(account)
     return JsonResponse(
@@ -529,7 +523,7 @@ def interpreters(request: HttpRequest) -> JsonResponse:
                 email=email,
                 languages=langs,
                 categories=categories,
-                availability="available",
+                availability="offline",
                 verification_state=data.get("verificationState") or "verified",
                 rating=0,
             )
@@ -1914,6 +1908,53 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
         results.append(data)
 
     return JsonResponse({"waitingCalls": results})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def clear_waiting_calls(request: HttpRequest) -> JsonResponse:
+    """Permanently clear missed/expired waiting calls so they never reappear on re-login."""
+    account = _account_from_request(request)
+    if not account or account.role != "interpreter":
+        return _error("Interpreter access required", 403)
+
+    data = _body(request)
+    refs = [str(r) for r in (data.get("references") or []) if r]
+    assignment_id = str(data.get("assignmentId") or "").strip()
+
+    interp_ids = list(
+        Interpreter.objects.filter(email__iexact=account.email).values_list("id", flat=True)
+    )
+    now = timezone.now()
+
+    if assignment_id and interp_ids:
+        Assignment.objects.filter(pk=assignment_id, interpreter_id__in=interp_ids).exclude(
+            outcome="accepted"
+        ).update(outcome="cleared", responded_at=now)
+
+    if refs:
+        if interp_ids:
+            Assignment.objects.filter(
+                request_reference__in=refs,
+                interpreter_id__in=interp_ids,
+                outcome__in=["expired", "rejected", "pending"],
+            ).update(outcome="cleared", responded_at=now)
+        # Mark expired/unanswered matching requests as unresolved so waiting_calls won't return them
+        for ref in refs:
+            has_live_pending = Assignment.objects.filter(
+                request_reference=ref, outcome="pending", expires_at__gt=now
+            ).exists()
+            if not has_live_pending:
+                InterpretationRequest.objects.filter(
+                    pk=ref, status="matching"
+                ).update(status="unresolved", updated_at=now)
+    elif interp_ids:
+        Assignment.objects.filter(
+            interpreter_id__in=interp_ids,
+            outcome="expired",
+        ).update(outcome="cleared", responded_at=now)
+
+    return JsonResponse({"success": True})
 
 
 @csrf_exempt

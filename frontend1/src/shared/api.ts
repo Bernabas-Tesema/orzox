@@ -537,6 +537,12 @@ export const api = {
   async getWaitingCalls(): Promise<{ waitingCalls: InterpretationRequest[] }> {
     return request('/waiting-calls');
   },
+  async clearWaitingCalls(references: string[], assignmentId?: string): Promise<{ success: boolean }> {
+    return request('/waiting-calls/clear', {
+      method: 'POST',
+      body: JSON.stringify({ references, assignmentId }),
+    });
+  },
   async takeWaitingCall(reference: string): Promise<{
     success: boolean;
     session: InterpretationSession;

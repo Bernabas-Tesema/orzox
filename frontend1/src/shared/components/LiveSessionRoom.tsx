@@ -108,6 +108,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
       }
       return next;
     });
+    api.clearWaitingCalls(refs).catch(() => undefined);
   };
   const [takingCall, setTakingCall] = useState<string | null>(null);
   // Live countdown ticker — increments every second to force sidebar re-renders
