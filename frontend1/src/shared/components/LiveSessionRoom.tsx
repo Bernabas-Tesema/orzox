@@ -893,7 +893,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
                 const isMissed = secondsLeft <= 0;
                 return (
-                  <div key={call.reference} className={`rounded-xl border p-3 space-y-2 shadow-xs transition-colors ${isMissed ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50/70'}`}>
+                  <div key={call.reference} className={`rounded-xl border-2 p-3 space-y-2 shadow-xs transition-colors ${isMissed ? 'border-red-500 bg-red-100/90' : 'border-emerald-400 bg-emerald-50/70'}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-[11px] text-slate-800 font-bold">{call.reference}</span>
                       <div className="flex items-center gap-1.5">
@@ -903,28 +903,32 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                         <button
                           type="button"
                           onClick={() => setClearedWaitingRefs((prev) => [...prev, call.reference])}
-                          className="p-0.5 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                          className="p-0.5 rounded text-slate-500 hover:text-slate-900 cursor-pointer"
                           title="Clear card"
                         >
                           <X className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     </div>
-                    <p className="font-bold text-slate-900 text-xs leading-tight truncate">{call.requesterName} <span className="font-normal text-slate-500">wants to connect</span></p>
+                    <p className="font-bold text-slate-900 text-xs leading-tight truncate">{call.requesterName} <span className="font-normal text-slate-600">wants to connect</span></p>
                     <div className="flex items-center gap-1.5 text-[11px]">
                       <span className="font-black text-blue-700">{call.sourceLanguage?.toUpperCase()}</span>
                       <span className="text-slate-400">→</span>
                       <span className="font-black text-slate-900">{call.targetLanguage?.toUpperCase()}</span>
                       <span className="text-slate-400">·</span>
-                      <span className="text-slate-500 capitalize truncate">{call.serviceCategory?.replace(/_/g, ' ')}</span>
+                      <span className="text-slate-600 capitalize truncate">{call.serviceCategory?.replace(/_/g, ' ')}</span>
                       {call.urgency === 'emergency' && (
                         <span className="ml-auto text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Emergency</span>
                       )}
                     </div>
                     {isMissed ? (
-                      <div className="w-full py-2 rounded-xl bg-red-600 text-white text-xs font-extrabold flex items-center justify-center">
+                      <button
+                        type="button"
+                        disabled
+                        className="w-full py-2 rounded-xl bg-red-600 text-white text-xs font-extrabold flex items-center justify-center cursor-not-allowed"
+                      >
                         Missed Call
-                      </div>
+                      </button>
                     ) : (
                       <button
                         onClick={() => handleTakeCall(call.reference)}

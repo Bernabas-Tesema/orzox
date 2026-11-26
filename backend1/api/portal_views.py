@@ -1872,18 +1872,17 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
             if not dispatch.language_match(interp, req.source_language, req.target_language):
                 continue
 
-        # Find the assignment with the latest expires_at for this request
+        # Find the latest assignment (pending or recently expired) for this request
         asg = (
             Assignment.objects.filter(
                 request_reference=req.reference,
-                outcome="pending",
-                expires_at__gt=now,
+                outcome__in=["pending", "expired"],
             )
             .order_by("-expires_at")
             .first()
         )
         if not asg:
-            # All matching interpreters are busy: show as a queued call.
+            # All matching interpreters are busy (no assignment yet): show as a queued call.
             data = _request_json(req)
             data["assignmentExpiresAt"] = None
             data["assignmentId"] = None
@@ -1893,6 +1892,7 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
         data = _request_json(req)
         data["assignmentExpiresAt"] = asg.expires_at.isoformat()
         data["assignmentId"] = asg.id
+        data["queued"] = False
         results.append(data)
 
     return JsonResponse({"waitingCalls": results})
