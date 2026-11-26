@@ -91,8 +91,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [takingCall, setTakingCall] = useState<string | null>(null);
   // Live countdown ticker — increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
-  // Right-side Live Session Chat
-  const [showRightPanel, setShowRightPanel] = useState(true);
+  // Right-side Live Session Chat (open by default on desktop, toggled via Chat button on mobile)
+  const [showRightPanel, setShowRightPanel] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true,
+  );
   const [chatWidth, setChatWidth] = useState<'narrow' | 'normal' | 'wide'>('normal');
   const [rightTab, setRightTab] = useState<'chat' | 'participants'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
@@ -749,15 +751,15 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
       )}
 
-      {/* Main Workspace Body — stage left, incoming call + chat right */}
-      <div className="flex-1 flex overflow-hidden z-10">
+      {/* Main Workspace Body — stacked video boxes (up/down) on mobile, side-by-side on desktop */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden z-10 relative">
 
-        {/* Left: Framed Caller & Interpreter Side-by-Side + Controls */}
-        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-3 sm:p-4 gap-3">
-          {/* 2-Column Framed Call Cards (Left: You, Right: Other Party) */}
-          <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
-            {/* Left Frame: Local (Caller or Interpreter) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-blue-500/40 ring-1 ring-slate-200 min-h-[220px]">
+        {/* Left: Framed Caller & Interpreter (Up/Down on Mobile, Left/Right on Desktop) + Controls */}
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden p-2.5 sm:p-4 gap-2.5 sm:gap-3">
+          {/* 2-Card Video Grid: 1 col x 2 rows (up & down) on mobile, 2 cols x 1 row on md+ */}
+          <div className="flex-1 grid grid-cols-1 grid-rows-2 md:grid-cols-2 md:grid-rows-1 gap-3 min-h-0">
+            {/* Top (Mobile) / Left (Desktop) Frame: Local */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-blue-500/40 ring-1 ring-slate-200 min-h-0">
               <video ref={localVideoRef} autoPlay playsInline muted className="w-full h-full object-cover -scale-x-100" />
               {isVideoOff && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 z-10 bg-slate-900">
@@ -780,8 +782,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               </div>
             </div>
 
-            {/* Right Frame: Remote (Interpreter or Caller) */}
-            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-emerald-500/40 ring-1 ring-slate-200 min-h-[220px]">
+            {/* Bottom (Mobile) / Right (Desktop) Frame: Remote */}
+            <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-lg border-2 border-emerald-500/40 ring-1 ring-slate-200 min-h-0">
               <video ref={remoteVideoRef} autoPlay playsInline className="w-full h-full object-cover" />
               {!hasRemoteVideo && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -863,9 +865,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           const visibleWaiting = waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference));
           const hasWaiting = currentUser.role === 'interpreter' && visibleWaiting.length > 0 && !endingCall;
           if (!showRightPanel && !hasWaiting) return null;
-          const widthClass = chatWidth === 'narrow' ? 'w-72' : chatWidth === 'wide' ? 'w-[28rem] lg:w-[32rem]' : 'w-80 lg:w-96';
+          const widthClass = chatWidth === 'narrow' ? 'md:w-72' : chatWidth === 'wide' ? 'md:w-[28rem] lg:w-[32rem]' : 'md:w-80 lg:w-96';
           return (
-        <aside className={`${widthClass} flex-shrink-0 bg-white border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
+        <aside className={`w-full ${widthClass} max-h-[48vh] md:max-h-none flex-shrink-0 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
           {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting) */}
           {hasWaiting && (
             <div className="rounded-2xl border border-emerald-200 bg-slate-50 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
