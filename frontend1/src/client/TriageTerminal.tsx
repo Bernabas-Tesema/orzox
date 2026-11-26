@@ -254,6 +254,20 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   };
 
   const activeLanguages = languages.filter((l) => l.isActive);
+  const staffLanguageOptions = [
+    { code: 'amh', label: 'Amharic (አማርኛ)' },
+    { code: 'eng', label: 'English' },
+    { code: 'orm', label: 'Oromo (Afaan Oromoo)' },
+    { code: 'tir', label: 'Tigrinya (ትግርኛ)' },
+  ].filter((opt) => opt.code !== sourceLanguage);
+
+  const handleSourceLanguageChange = (nextSource: string) => {
+    setSourceLanguage(nextSource);
+    if (nextSource === targetLanguage) {
+      const fallback = ['amh', 'eng', 'orm', 'tir'].find((code) => code !== nextSource);
+      if (fallback) setTargetLanguage(fallback);
+    }
+  };
 
   // Derive active request from server state — this means the ringing page
   // shows even on page reload or if the user navigates away and comes back.
@@ -380,7 +394,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
               <div className="relative">
                 <select
                   value={sourceLanguage}
-                  onChange={(e) => setSourceLanguage(e.target.value)}
+                  onChange={(e) => handleSourceLanguageChange(e.target.value)}
                   className="w-full h-11 px-3.5 pr-9 text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer shadow-xs"
                 >
                   {activeLanguages.map((lang) => (
@@ -407,10 +421,11 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
                   onChange={(e) => setTargetLanguage(e.target.value)}
                   className="w-full h-11 px-3.5 pr-9 text-sm font-semibold border border-slate-200 rounded-xl bg-white text-slate-900 appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition cursor-pointer shadow-xs"
                 >
-                  <option value="amh" className="bg-white text-slate-900">Amharic (አማርኛ)</option>
-                  <option value="eng" className="bg-white text-slate-900">English</option>
-                  <option value="orm" className="bg-white text-slate-900">Oromo (Afaan Oromoo)</option>
-                  <option value="tir" className="bg-white text-slate-900">Tigrinya (ትግርኛ)</option>
+                  {staffLanguageOptions.map((opt) => (
+                    <option key={opt.code} value={opt.code} className="bg-white text-slate-900">
+                      {opt.label}
+                    </option>
+                  ))}
                 </select>
                 <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-3.5 pointer-events-none" />
               </div>

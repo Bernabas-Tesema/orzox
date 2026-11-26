@@ -574,9 +574,9 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               </span>
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              {session.organizationName} â€¢ {session.serviceCategory.replace('_', ' ').toUpperCase()} â€¢{' '}
+              {session.organizationName} • {session.serviceCategory.replace('_', ' ').toUpperCase()} •{' '}
               <strong className="text-cyan-300">
-                {session.sourceLanguage.toUpperCase()} â‡„ {session.targetLanguage.toUpperCase()}
+                {session.sourceLanguage.toUpperCase()} ⇄ {session.targetLanguage.toUpperCase()}
               </strong>
             </p>
           </div>
@@ -627,7 +627,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           {/* Security badge */}
           <div className="hidden md:flex items-center space-x-1.5 text-[11px] bg-slate-900/60 text-slate-400 border border-white/10 px-2.5 py-1 rounded-lg">
             <Shield className="w-3.5 h-3.5 text-slate-500" />
-            <span>Encrypted Â· No Recording</span>
+            <span>Encrypted · No Recording</span>
           </div>
 
           {/* Glossary */}
@@ -749,7 +749,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 <PhoneCall className="w-4 h-4 text-amber-400 animate-pulse" />
                 <span className="text-sm font-black text-white uppercase tracking-wide">Calls Waiting ({waitingCalls.length})</span>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">Pick a call below -- your current call ends first.</p>
+              <p className="text-[11px] text-slate-400 mt-1">Pick a call below — your current call ends first.</p>
             </div>
             {/* Cards */}
             <div className="flex-1 overflow-y-auto p-3 space-y-3">
@@ -763,16 +763,15 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   : 0;
                 const urgent = secondsLeft !== null && secondsLeft <= 10;
                 return (
-                  <div key={call.reference} className={`rounded-xl border p-3 space-y-2 ${urgent ? 'bg-red-950/50 border-red-500/50' : 'bg-slate-800/80 border-slate-700/50'}`}>
+                  <div key={call.reference} className={`rounded-xl border p-3.5 space-y-2 ${urgent ? 'bg-red-950/60 border-red-500/60' : 'bg-red-950/30 border-red-500/40'}`}>
                     {/* Ref + live timer badge */}
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-xs text-slate-300 font-bold">{call.reference}</span>
+                      <span className="font-mono text-xs text-cyan-400 font-bold">{call.reference}</span>
                       {secondsLeft !== null ? (
-                        <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-amber-500/20 text-amber-300'}`}>{secondsLeft}s</span>
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${urgent ? 'bg-red-500/40 text-red-200 animate-pulse' : 'bg-blue-600/40 text-blue-200'}`}>{secondsLeft}s</span>
                       ) : (
-                        <span className="text-[10px] font-mono bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded font-bold flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {formatTimer(waitedSeconds)}
+                        <span className="text-[10px] font-mono bg-blue-600/40 text-blue-200 px-2 py-0.5 rounded-md font-bold flex items-center gap-1">
+                          Queued · {formatTimer(waitedSeconds)}
                         </span>
                       )}
                     </div>
@@ -782,15 +781,15 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                     <p className="text-[11px] text-slate-400 truncate">{call.organizationName}</p>
                     {/* Languages + urgency */}
                     <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-black text-white">{call.sourceLanguage?.toUpperCase()}</span>
-                      <span className="text-slate-500 text-xs">-</span>
+                      <span className="text-xs font-black text-cyan-300">{call.sourceLanguage?.toUpperCase()}</span>
+                      <span className="text-slate-500 text-xs">→</span>
                       <span className="text-xs font-black text-white">{call.targetLanguage?.toUpperCase()}</span>
                       {call.urgency === 'emergency' && (
-                        <span className="ml-auto text-[10px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Emergency</span>
+                        <span className="ml-auto text-[10px] bg-red-600 text-white px-2 py-0.5 rounded font-black uppercase">Emergency</span>
                       )}
                     </div>
                     {/* Category */}
-                    <p className="text-[11px] text-slate-500 capitalize">{call.serviceCategory?.replace(/_/g, ' ')}</p>
+                    <p className="text-[11px] text-slate-400 capitalize">{call.serviceCategory?.replace(/_/g, ' ')}</p>
                     {/* Countdown bar */}
                     {expiresAt > 0 && secondsLeft !== null && (
                       <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">

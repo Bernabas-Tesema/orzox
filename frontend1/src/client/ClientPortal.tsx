@@ -8,7 +8,7 @@ import {
   CommunicationMode,
   ScheduleType
 } from '../shared/types';
-import { OrgReport } from './OrgReport';
+import { OrgReport, OrgReportSection } from './OrgReport';
 import { TriageTerminal } from './TriageTerminal';
 import { HistoryRange, inHistoryRange } from '../shared/historyRange';
 import { workplaceOf } from '../shared/workplace';
@@ -20,7 +20,15 @@ import {
   Video,
   Volume2,
   XCircle,
-  ArrowRight
+  ArrowRight,
+  BarChart3,
+  LayoutDashboard,
+  Users,
+  Clock,
+  History,
+  ChevronLeft,
+  ChevronRight,
+  Search
 } from 'lucide-react';
 
 interface ClientPortalProps {
@@ -77,7 +85,10 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
 
   const isOrgAdmin = currentUser.clientAccountType === 'organization_admin';
   const [workspace, setWorkspace] = useState<'triage' | 'report'>('triage');
+  const [reportTab, setReportTab] = useState<OrgReportSection | 'history'>('overview');
   const [historyRange, setHistoryRange] = useState<HistoryRange>('month');
+  const [historySearch, setHistorySearch] = useState('');
+  const [historyPage, setHistoryPage] = useState(1);
 
   useEffect(() => {
     if (!initialSourceLanguage) return;
@@ -194,7 +205,25 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
     );
   }
 
-  const visibleRequests = requests.filter((req) => inHistoryRange(req.createdAt, historyRange));
+  const HISTORY_PAGE_SIZE = 6;
+  const visibleRequests = requests.filter((req) => {
+    if (!inHistoryRange(req.createdAt, historyRange)) return false;
+    const q = historySearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      req.reference.toLowerCase().includes(q) ||
+      req.requesterName.toLowerCase().includes(q) ||
+      (req.assignedInterpreterName || '').toLowerCase().includes(q) ||
+      req.minRoutingContext.toLowerCase().includes(q)
+    );
+  });
+  const totalHistoryPages = Math.max(1, Math.ceil(visibleRequests.length / HISTORY_PAGE_SIZE));
+  const safeHistoryPage = Math.min(historyPage, totalHistoryPages);
+  const pagedRequests = visibleRequests.slice(
+    (safeHistoryPage - 1) * HISTORY_PAGE_SIZE,
+    safeHistoryPage * HISTORY_PAGE_SIZE,
+  );
+
   const workspaceTabs = (
     <div className="inline-flex rounded-2xl border border-slate-200 bg-white p-1 shadow-sm">
       <button
@@ -235,118 +264,233 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
     );
   }
 
+  const reportNavItems: Array<{ id: OrgReportSection | 'history'; label: string; icon: typeof LayoutDashboard }> = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'usage', label: 'Usage', icon: BarChart3 },
+    { id: 'accounts', label: 'Accounts', icon: Users },
+    { id: 'recent', label: 'Recent activity', icon: Clock },
+    { id: 'history', label: 'Request history', icon: History },
+  ];
+
   return (
-    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        {workspaceTabs}
-        <HistoryRangeControl value={historyRange} onChange={setHistoryRange} />
-      </div>
-
-      <OrgReport range={historyRange} />
-
-      <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md shadow-slate-900/5 overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex items-center justify-between bg-gray-50/70">
-          <div>
-            <h2 className="text-sm font-bold text-gray-900">
-              {isOrgAdmin ? 'Organization Request History' : 'Terminal Active Requests'}
+    <div className="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="min-h-[calc(100vh-190px)] overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xl shadow-slate-900/5 flex flex-col md:flex-row">
+        {/* Left Sidebar Menu Bar */}
+        <aside className="w-full md:w-64 shrink-0 bg-[#17213a] text-slate-100 flex flex-col">
+          <div className="p-5 border-b border-white/10">
+            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-300">Organization</p>
+            <h2 className="mt-1 text-sm font-black tracking-tight text-white truncate">
+              {currentUser.organizationName || 'Organization report'}
             </h2>
-            <p className="text-xs text-gray-500">Live matching, assigned interpreters, and session actions</p>
           </div>
-          <button
-            onClick={() => setShowModal(true)}
-            className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>Create</span>
-          </button>
-        </div>
 
-        {visibleRequests.length === 0 ? (
-          <div className="text-center py-12 px-4">
-            <h3 className="text-xs font-semibold text-gray-800">
-              {requests.length === 0 ? 'No requests submitted yet' : 'No requests in this period'}
-            </h3>
+          <nav className="flex md:flex-col gap-1 p-3 overflow-x-auto md:overflow-visible">
             <button
-              onClick={() => setShowModal(true)}
-              className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer"
+              type="button"
+              onClick={() => setWorkspace('triage')}
+              className="flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white cursor-pointer shrink-0"
             >
-              Submit Intake Request
+              <ArrowRight className="h-4 w-4 rotate-180" />
+              <span>Triage desk</span>
             </button>
-          </div>
-        ) : (
-          <div className="grid gap-3 p-4 md:grid-cols-2">
-            {visibleRequests.map((req) => {
-              const badge = getStatusBadge(req.status);
-              const sourceLangObj = languages.find((l) => l.code === req.sourceLanguage);
-              const targetLangObj = languages.find((l) => l.code === req.targetLanguage);
-              const sourceName = req.isUnknownLanguage ? 'Unknown language' : (sourceLangObj?.name || req.sourceLanguage);
-              const targetName = targetLangObj?.name || req.targetLanguage;
-              const when = new Date(req.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-              const modalityLabel = req.modality === 'phone_assisted' ? 'Speakerphone' : req.modality;
 
+            <div className="hidden md:block my-2 border-t border-white/10" />
+
+            {reportNavItems.map((item) => {
+              const Icon = item.icon;
+              const active = reportTab === item.id;
               return (
-                <article key={req.reference} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="font-mono text-[11px] font-semibold text-slate-400">{req.reference}</p>
-                      <p className="text-lg font-black text-slate-900">{sourceName} → {targetName}</p>
-                    </div>
-                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>
-                      {badge.label}
-                    </span>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600">
-                    <span className="rounded-full bg-slate-100 px-2 py-1">{when}</span>
-                    <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-800">{req.serviceCategory.replaceAll('_', ' ')}</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 capitalize">{modalityLabel}</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-1 capitalize">{req.urgency}</span>
-                    <span className="rounded-full bg-slate-100 px-2 py-1">{req.requesterName}</span>
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-slate-600">{req.minRoutingContext}</p>
-                  <p className="mt-2 text-sm font-semibold text-slate-800">
-                    {req.assignedInterpreterName ? `Interpreter: ${req.assignedInterpreterName}` : 'Waiting for an interpreter'}
-                  </p>
-                  <div className="mt-4 flex items-center gap-2">
-                    {req.status === 'matching' && (
-                      <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-                        Ringing interpreters…
-                      </span>
-                    )}
-                    {req.status === 'assigned' && !req.activeSessionId && (
-                      <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-                        Interpreter accepted — preparing the room…
-                      </span>
-                    )}
-                    {['assigned', 'in_session'].includes(req.status) && req.activeSessionId && (
-                      <button
-                        onClick={() => onJoinSession(req.activeSessionId!)}
-                        className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white cursor-pointer"
-                      >
-                        Join call
-                      </button>
-                    )}
-                    {req.status === 'completed' && req.activeSessionId && (
-                      <button
-                        onClick={() => onOpenFeedback(req.activeSessionId!)}
-                        className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 cursor-pointer"
-                      >
-                        Rate
-                      </button>
-                    )}
-                    {!['completed', 'cancelled'].includes(req.status) && (
-                      <button
-                        onClick={() => setCancelModalRef(req.reference)}
-                        className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 cursor-pointer"
-                      >
-                        Cancel
-                      </button>
-                    )}
-                  </div>
-                </article>
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setReportTab(item.id)}
+                  className={`flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-xs font-bold cursor-pointer shrink-0 transition-colors ${
+                    active
+                      ? 'bg-blue-600 text-white shadow-md'
+                      : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <Icon className="h-4 w-4 shrink-0" />
+                  <span>{item.label}</span>
+                </button>
               );
             })}
+          </nav>
+        </aside>
+
+        {/* Right Content Area */}
+        <div className="min-w-0 flex-1 bg-slate-50/70 p-4 sm:p-6 space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">Organization Report</p>
+              <h1 className="text-xl font-black text-slate-900">
+                {reportNavItems.find((i) => i.id === reportTab)?.label}
+              </h1>
+            </div>
+            <HistoryRangeControl
+              value={historyRange}
+              onChange={(next) => {
+                setHistoryRange(next);
+                setHistoryPage(1);
+              }}
+            />
           </div>
-        )}
+
+          {reportTab !== 'history' ? (
+            <OrgReport range={historyRange} section={reportTab} />
+          ) : (
+            <div className="bg-white rounded-3xl border border-slate-200/90 shadow-sm overflow-hidden">
+              <div className="p-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3 bg-gray-50/70">
+                <div>
+                  <h2 className="text-sm font-bold text-gray-900">
+                    {isOrgAdmin ? 'Organization Request History' : 'Terminal Active Requests'}
+                  </h2>
+                  <p className="text-xs text-gray-500">
+                    {visibleRequests.length} request{visibleRequests.length === 1 ? '' : 's'} in this period
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2.5" />
+                    <input
+                      type="text"
+                      value={historySearch}
+                      onChange={(e) => {
+                        setHistorySearch(e.target.value);
+                        setHistoryPage(1);
+                      }}
+                      placeholder="Search ref, requester..."
+                      className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="inline-flex items-center space-x-1 px-3 py-1.5 rounded-lg bg-blue-600 text-white font-bold text-xs hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
+                  >
+                    <PlusCircle className="w-3.5 h-3.5" />
+                    <span>Create</span>
+                  </button>
+                </div>
+              </div>
+
+              {visibleRequests.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <h3 className="text-xs font-semibold text-gray-800">
+                    {requests.length === 0 ? 'No requests submitted yet' : 'No requests in this period'}
+                  </h3>
+                  <button
+                    onClick={() => setShowModal(true)}
+                    className="mt-3 px-4 py-2 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer"
+                  >
+                    Submit Intake Request
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="grid gap-3 p-4 md:grid-cols-2">
+                    {pagedRequests.map((req) => {
+                      const badge = getStatusBadge(req.status);
+                      const sourceLangObj = languages.find((l) => l.code === req.sourceLanguage);
+                      const targetLangObj = languages.find((l) => l.code === req.targetLanguage);
+                      const sourceName = req.isUnknownLanguage ? 'Unknown language' : (sourceLangObj?.name || req.sourceLanguage);
+                      const targetName = targetLangObj?.name || req.targetLanguage;
+                      const when = new Date(req.createdAt).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                      const modalityLabel = req.modality === 'phone_assisted' ? 'Speakerphone' : req.modality;
+
+                      return (
+                        <article key={req.reference} className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-sm">
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <p className="font-mono text-[11px] font-semibold text-slate-400">{req.reference}</p>
+                              <p className="text-lg font-black text-slate-900">{sourceName} → {targetName}</p>
+                            </div>
+                            <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${badge.className}`}>
+                              {badge.label}
+                            </span>
+                          </div>
+                          <div className="mt-3 flex flex-wrap gap-2 text-[11px] font-semibold text-slate-600">
+                            <span className="rounded-full bg-slate-100 px-2 py-1">{when}</span>
+                            <span className="rounded-full bg-blue-50 px-2 py-1 text-blue-800">{req.serviceCategory.replaceAll('_', ' ')}</span>
+                            <span className="rounded-full bg-slate-100 px-2 py-1 capitalize">{modalityLabel}</span>
+                            <span className="rounded-full bg-slate-100 px-2 py-1 capitalize">{req.urgency}</span>
+                            <span className="rounded-full bg-slate-100 px-2 py-1">{req.requesterName}</span>
+                          </div>
+                          <p className="mt-3 text-sm leading-relaxed text-slate-600">{req.minRoutingContext}</p>
+                          <p className="mt-2 text-sm font-semibold text-slate-800">
+                            {req.assignedInterpreterName ? `Interpreter: ${req.assignedInterpreterName}` : 'Waiting for an interpreter'}
+                          </p>
+                          <div className="mt-4 flex items-center gap-2">
+                            {req.status === 'matching' && (
+                              <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
+                                Ringing interpreters…
+                              </span>
+                            )}
+                            {req.status === 'assigned' && !req.activeSessionId && (
+                              <span className="rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
+                                Interpreter accepted — preparing the room…
+                              </span>
+                            )}
+                            {['assigned', 'in_session'].includes(req.status) && req.activeSessionId && (
+                              <button
+                                onClick={() => onJoinSession(req.activeSessionId!)}
+                                className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white cursor-pointer"
+                              >
+                                Join call
+                              </button>
+                            )}
+                            {req.status === 'completed' && req.activeSessionId && (
+                              <button
+                                onClick={() => onOpenFeedback(req.activeSessionId!)}
+                                className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800 cursor-pointer"
+                              >
+                                Rate
+                              </button>
+                            )}
+                            {!['completed', 'cancelled'].includes(req.status) && (
+                              <button
+                                onClick={() => setCancelModalRef(req.reference)}
+                                className="rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-500 hover:text-red-600 cursor-pointer"
+                              >
+                                Cancel
+                              </button>
+                            )}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                  {visibleRequests.length > HISTORY_PAGE_SIZE && (
+                    <div className="px-4 py-3 border-t border-slate-100 flex items-center justify-between bg-slate-50/50">
+                      <span className="text-xs font-semibold text-slate-500">
+                        Page {safeHistoryPage} of {totalHistoryPages}
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={safeHistoryPage <= 1}
+                          onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          <ChevronLeft className="w-3.5 h-3.5" />
+                          Previous
+                        </button>
+                        <button
+                          type="button"
+                          disabled={safeHistoryPage >= totalHistoryPages}
+                          onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                          className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
+                        >
+                          Next
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* New Request Modal */}
@@ -422,7 +566,14 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
                     </label>
                     <select
                       value={sourceLanguage}
-                      onChange={(e) => setSourceLanguage(e.target.value)}
+                      onChange={(e) => {
+                        const nextSource = e.target.value;
+                        setSourceLanguage(nextSource);
+                        if (nextSource === targetLanguage) {
+                          const fallback = activeLanguages.find((l) => l.code !== nextSource);
+                          if (fallback) setTargetLanguage(fallback.code);
+                        }
+                      }}
                       className="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white"
                     >
                       {activeLanguages.map((lang) => (
@@ -442,11 +593,13 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({
                       onChange={(e) => setTargetLanguage(e.target.value)}
                       className="w-full text-xs border border-gray-300 rounded-lg p-2 bg-white"
                     >
-                      {activeLanguages.map((lang) => (
-                        <option key={lang.code} value={lang.code}>
-                          {lang.name} ({lang.nativeName})
-                        </option>
-                      ))}
+                      {activeLanguages
+                        .filter((lang) => lang.code !== sourceLanguage)
+                        .map((lang) => (
+                          <option key={lang.code} value={lang.code}>
+                            {lang.name} ({lang.nativeName})
+                          </option>
+                        ))}
                     </select>
                   </div>
               </div>
