@@ -48,20 +48,12 @@ export function findEligibleInterpreters(request: InterpretationRequest): {
       l => l.languageCode.toLowerCase() === request.targetLanguage.toLowerCase()
     );
 
-    if (!hasSource && !hasTarget) {
+    if (!hasSource || !hasTarget) {
       continue;
     }
 
-    if (hasSource && hasTarget) {
-      score += 50;
-      matchReasons.push(`Certified pair: ${request.sourceLanguage.toUpperCase()} <-> ${request.targetLanguage.toUpperCase()}`);
-    } else if (hasSource) {
-      score += 30;
-      matchReasons.push(`Speaks source language (${request.sourceLanguage.toUpperCase()})`);
-    } else if (hasTarget) {
-      score += 20;
-      matchReasons.push(`Speaks target language (${request.targetLanguage.toUpperCase()})`);
-    }
+    score += 50;
+    matchReasons.push(`Certified pair: ${request.sourceLanguage.toUpperCase()} <-> ${request.targetLanguage.toUpperCase()}`);
 
     // Proficiency bonus
     if (hasSource?.proficiency === 'native') {
@@ -71,12 +63,13 @@ export function findEligibleInterpreters(request: InterpretationRequest): {
       score += 10;
     }
 
-    // Service category match & qualification check (FR-028, FR-029)
+    // Service category match required
     const hasCategoryExperience = interpreter.serviceCategories.includes(request.serviceCategory);
-    if (hasCategoryExperience) {
-      score += 15;
-      matchReasons.push(`Domain expertise in ${request.serviceCategory.replace('_', ' ')}`);
+    if (!hasCategoryExperience) {
+      continue;
     }
+    score += 15;
+    matchReasons.push(`Domain expertise in ${request.serviceCategory.replace('_', ' ')}`);
 
     const categoryQualification = interpreter.qualifications.find(
       q => q.category === request.serviceCategory && q.verified

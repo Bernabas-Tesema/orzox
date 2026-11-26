@@ -2047,14 +2047,14 @@ router.get('/waiting-calls', (req: Request, res: Response) => {
   const waiting = db.requests
     .filter((r) => ['submitted', 'matching', 'pending_coordinator', 'assigned'].includes(r.status) && !r.assignedInterpreterId)
     .filter((r) => {
-      if (!interp) return true;
-      const catMatch = !interp.serviceCategories.length || interp.serviceCategories.includes(r.serviceCategory);
+      if (!interp) return false;
+      const catMatch = interp.serviceCategories.includes(r.serviceCategory);
       const langCodes = new Set(interp.supportedLanguages.map((l) => l.languageCode.toLowerCase()));
-      const langMatch =
-        !langCodes.size ||
-        r.isUnknownLanguage ||
-        langCodes.has(r.sourceLanguage.toLowerCase()) ||
-        langCodes.has(r.targetLanguage.toLowerCase());
+      const src = r.sourceLanguage.toLowerCase();
+      const tgt = r.targetLanguage.toLowerCase();
+      const langMatch = r.isUnknownLanguage
+        ? langCodes.has(tgt)
+        : langCodes.has(src) && langCodes.has(tgt);
       return catMatch && langMatch;
     })
     .map((r) => {

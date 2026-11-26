@@ -1839,9 +1839,11 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
     if not account:
         return _error("Sign in required", 401)
 
-    interp = None
+    interps = []
     if account.role == "interpreter":
-        interp = Interpreter.objects.filter(email__iexact=account.email).first()
+        interps = list(Interpreter.objects.filter(email__iexact=account.email))
+        if not interps:
+            return JsonResponse({"waitingCalls": []})
 
     now = timezone.now()
     # Only assignments that are pending AND not yet expired
@@ -1880,10 +1882,12 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
             continue
 
         # Filter to the interpreter's domain (service category) and languages
-        if interp is not None:
-            if not dispatch.category_match(interp, req.service_category):
-                continue
-            if not dispatch.language_match(interp, req.source_language, req.target_language):
+        if account.role == "interpreter":
+            if not any(
+                dispatch.category_match(ip, req.service_category)
+                and dispatch.language_match(ip, req.source_language, req.target_language)
+                for ip in interps
+            ):
                 continue
 
         # Find the latest assignment (pending or recently expired) for this request
