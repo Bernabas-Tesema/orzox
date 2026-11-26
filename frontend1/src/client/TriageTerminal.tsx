@@ -201,7 +201,7 @@ function WaitingState({
         onClick={onBack}
         className="w-full h-11 rounded-xl border border-white/20 bg-white/5 text-slate-300 text-xs font-bold cursor-pointer hover:bg-white/10"
       >
-        Cancel and go back
+        Cancel and back to form
       </button>
     </div>
   );
@@ -237,6 +237,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   requests,
   languages,
   onCreateRequest,
+  onCancelRequest,
   onJoinSession,
   initialSourceLanguage,
   onOpenSupport,
@@ -478,13 +479,18 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
             onJoinSession={onJoinSession}
             onBack={async () => {
               stopOutgoingRing(ringRef);
-              const refToCancel = ringingRequest?.reference || trackedRef;
+              const refToCancel = ringingRequest?.reference || activeRequest?.reference || trackedRef;
               setCalling(false);
               setDeclinedByOther(false);
               setTrackedRef(null);
               setAttempt(1);
+              setError(null);
               if (refToCancel && !declinedByOther) {
-                await onCancelRequest(refToCancel, 'Call declined by caller').catch(() => undefined);
+                try {
+                  await onCancelRequest(refToCancel, 'Cancelled by caller');
+                } catch {
+                  // Request may already be cancelled/completed
+                }
               }
             }}
             onRetry={async () => {
