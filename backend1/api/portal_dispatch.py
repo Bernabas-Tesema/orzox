@@ -313,17 +313,12 @@ def try_auto_dispatch(req: InterpretationRequest) -> Optional[dict[str, Any]]:
         responded_at=timezone.now(),
     )
 
-    # 1) available + language/category
-    # 2) available any language
-    # 3) offline + language/category (still ring desks that forgot to toggle Available)
-    # 4) offline any language
+    # 1) online (available) + language/category
+    # 2) online (available) any language
+    # Offline interpreters never receive calls.
     candidates = find_candidates(req, loose=False, include_offline=False)
     if not candidates:
         candidates = find_candidates(req, loose=True, include_offline=False)
-    if not candidates:
-        candidates = find_candidates(req, loose=False, include_offline=True)
-    if not candidates:
-        candidates = find_candidates(req, loose=True, include_offline=True)
     if not candidates:
         # All matching interpreters may be on an active call. Keep the request
         # waiting and automatically dispatch it as soon as an interpreter frees.

@@ -88,8 +88,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   // Live countdown ticker — increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
   // Right-side Live Session Chat
+  const [showRightPanel, setShowRightPanel] = useState(true);
   const [rightTab, setRightTab] = useState<'chat' | 'participants'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
+  const [unreadChat, setUnreadChat] = useState(0);
   const [chatInput, setChatInput] = useState('');
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -383,6 +385,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                   timestamp: decoded.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 },
               ]);
+              setUnreadChat((c) => c + 1);
             }
           } catch {
             // ignore non-chat data packets
@@ -797,6 +800,24 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                 <Wifi className="w-4 h-4" />
                 <span className="hidden sm:inline">Low-Bandwidth</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowRightPanel((prev) => !prev);
+                  setRightTab('chat');
+                  setUnreadChat(0);
+                }}
+                className={`relative px-3 py-2.5 rounded-xl text-xs font-bold cursor-pointer flex items-center gap-1.5 ${showRightPanel && rightTab === 'chat' ? 'bg-emerald-600 text-white shadow-xs' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}
+                title="Toggle Session Chat"
+              >
+                <MessageSquare className="w-4 h-4" />
+                <span className="hidden sm:inline">Chat</span>
+                {unreadChat > 0 && (!showRightPanel || rightTab !== 'chat') && (
+                  <span className="ml-0.5 rounded-full bg-red-600 text-white text-[10px] font-black px-1.5 py-0.2">
+                    {unreadChat}
+                  </span>
+                )}
+              </button>
               <button onClick={handleEndCall} disabled={endingCall} className="bg-red-600 hover:bg-red-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm cursor-pointer flex items-center gap-1.5 disabled:opacity-60">
                 <PhoneOff className="w-4 h-4" />
                 <span>{endingCall ? 'Ending...' : 'End Call'}</span>
@@ -806,6 +827,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
 
         {/* Right Sidebar: Incoming / Waiting Calls Card + Live Session Chat */}
+        {(showRightPanel || (currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall)) && (
         <aside className="w-80 lg:w-96 flex-shrink-0 bg-white border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden">
           {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting) */}
           {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
@@ -959,6 +981,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             )}
           </div>
         </aside>
+        )}
 
         {/* Sidebar Glossary */}
         {showTerminology && (

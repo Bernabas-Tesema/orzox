@@ -277,46 +277,62 @@ export default function App() {
         onSelectLanguageForRequest={(langCode) => portal.setPreselectedSourceLanguage(langCode)}
       />
 
-      {/* Interpreter ring overlay — shows fullscreen when a call comes in and no session is active */}
+      {/* Compact interpreter ring card — green while active, turns red + Missed Call when timer ends */}
       {currentUser.role === 'interpreter' && !portal.activeSessionRoomId && !portal.interpreterProfile?.activeSessionId && (() => {
         const pending = portal.assignments.find((a) => a.outcome === 'pending');
         if (!pending) return null;
         const req = portal.requests.find((r) => r.reference === pending.requestReference);
         const lang = (code: string) => portal.languages.find((l) => l.code === code)?.name || code.toUpperCase();
         const secondsLeft = Math.max(0, Math.ceil((new Date(pending.expiresAt).getTime() - Date.now()) / 1000));
+        const isMissed = secondsLeft === 0;
         return (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/90 backdrop-blur-md">
-            <div className="w-full max-w-md mx-4 rounded-3xl border border-amber-400/30 bg-gradient-to-b from-slate-900 to-slate-950 p-8 text-white shadow-2xl space-y-6 text-center">
-              <div className="flex items-center justify-center gap-2">
-                <span className="animate-pulse text-amber-300 text-4xl">📞</span>
-              </div>
-              <div>
-                <p className="text-xs font-bold uppercase tracking-widest text-amber-300 mb-2">Incoming Request</p>
-                <p className="text-5xl font-black tabular-nums text-amber-200">{secondsLeft}</p>
-                <p className="text-xs text-white/60 mt-1">seconds to answer</p>
+          <div className="fixed bottom-5 right-5 z-[60] w-80 max-w-[calc(100vw-2rem)]">
+            <div className={`rounded-2xl border p-4 text-white shadow-2xl space-y-3 backdrop-blur-md transition-colors ${
+              isMissed
+                ? 'border-red-500/60 bg-red-950/95'
+                : 'border-emerald-400/50 bg-emerald-950/95'
+            }`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className={`text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md ${
+                  isMissed ? 'bg-red-600 text-white' : 'bg-emerald-500 text-slate-950'
+                }`}>
+                  {isMissed ? 'Missed Call' : 'Incoming Call'}
+                </span>
+                <span className={`text-xl font-black tabular-nums ${isMissed ? 'text-red-300' : 'text-emerald-200'}`}>
+                  {isMissed ? '0s' : `${secondsLeft}s`}
+                </span>
               </div>
               {req && (
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-left space-y-1">
-                  <p className="font-bold text-sm">{lang(req.sourceLanguage)} → {lang(req.targetLanguage)}</p>
-                  <p className="text-xs text-white/70 capitalize">{req.serviceCategory.replace(/_/g, ' ')} · {req.urgency}</p>
-                  <p className="text-xs text-white/60">{req.organizationName}</p>
-                  {req.minRoutingContext && <p className="text-xs text-white/50">{req.minRoutingContext}</p>}
+                <div className="rounded-xl border border-white/15 bg-black/20 p-2.5 text-left space-y-0.5">
+                  <p className="font-bold text-xs">{lang(req.sourceLanguage)} → {lang(req.targetLanguage)}</p>
+                  <p className="text-[11px] text-white/75 capitalize">{req.serviceCategory.replace(/_/g, ' ')} · {req.urgency}</p>
+                  <p className="text-[11px] text-white/60 truncate">{req.organizationName}</p>
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-3">
+              {isMissed ? (
                 <button
-                  onClick={() => portal.handleRespondAssignment(pending.id, 'rejected')}
-                  className="h-12 rounded-xl border border-white/20 bg-white/5 text-white text-sm font-bold hover:bg-white/10 cursor-pointer"
+                  type="button"
+                  onClick={() => portal.handleRespondAssignment(pending.id, 'rejected', 'Missed call timeout')}
+                  className="w-full h-9 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold cursor-pointer"
                 >
-                  Decline
+                  Dismiss Missed Call
                 </button>
-                <button
-                  onClick={() => portal.handleRespondAssignment(pending.id, 'accepted')}
-                  className="h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-extrabold cursor-pointer"
-                >
-                  Accept
-                </button>
-              </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => portal.handleRespondAssignment(pending.id, 'rejected')}
+                    className="h-9 rounded-xl border border-white/20 bg-white/10 text-white text-xs font-bold hover:bg-white/20 cursor-pointer"
+                  >
+                    Decline
+                  </button>
+                  <button
+                    onClick={() => portal.handleRespondAssignment(pending.id, 'accepted')}
+                    className="h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer"
+                  >
+                    Accept
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );
