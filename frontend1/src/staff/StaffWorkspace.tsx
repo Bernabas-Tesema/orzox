@@ -19,7 +19,7 @@ export function StaffWorkspace({
   const user = portal.currentUser;
   if (!user) return null;
 
-  const showReports = user.role === 'supervisor' || user.role === 'platform_admin';
+  const showReports = user.role === 'supervisor';
 
   if (user.role === 'interpreter') {
     return (
@@ -79,7 +79,7 @@ export function StaffWorkspace({
         </div>
       )}
 
-      <main className={`flex-1 w-full ${user.role === 'platform_admin' && view === 'main' ? '' : 'max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-6'}`}>
+      <main className={`flex-1 w-full ${user.role === 'platform_admin' ? '' : 'max-w-[1380px] mx-auto px-4 sm:px-6 lg:px-8 py-6'}`}>
         {view === 'reports' && showReports ? (
           <OperationalReports />
         ) : (
@@ -111,7 +111,7 @@ export function StaffWorkspace({
                 onVerifyInterpreter={portal.handleVerifyInterpreter}
                 onUpdateSettings={portal.handleUpdateSettings}
                 onAccountsCreated={portal.refreshData}
-                onOpenOperationalReports={() => setView('reports')}
+                onOpenCreateMeeting={onOpenCreateMeeting}
               />
             )}
           </>

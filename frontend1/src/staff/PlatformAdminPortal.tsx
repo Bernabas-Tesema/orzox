@@ -31,7 +31,8 @@ import {
   LayoutDashboard,
   ChevronDown,
   UserPlus,
-  Users
+  Users,
+  Video
 } from 'lucide-react';
 
 interface PlatformAdminPortalProps {
@@ -46,6 +47,7 @@ interface PlatformAdminPortalProps {
   onUpdateSettings: (settings: Partial<PlatformSettings>) => Promise<void>;
   onAccountsCreated?: () => Promise<void> | void;
   onOpenOperationalReports?: () => void;
+  onOpenCreateMeeting?: () => void;
 }
 
 export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
@@ -59,9 +61,9 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
   onVerifyInterpreter,
   onUpdateSettings,
   onAccountsCreated,
-  onOpenOperationalReports,
+  onOpenCreateMeeting,
 }) => {
-  const [activeTab, setActiveTab] = useState<'languages' | 'verification' | 'settings' | 'audit' | 'organizations' | 'interpreters' | 'supervisors'>('organizations');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'languages' | 'verification' | 'settings' | 'audit' | 'organizations' | 'interpreters' | 'supervisors'>('dashboard');
   const [systemAdminOpen, setSystemAdminOpen] = useState(true);
   const [orgName, setOrgName] = useState('');
   const [orgWorkplace, setOrgWorkplace] = useState('healthcare');
@@ -318,9 +320,9 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
         <nav className="flex-1 space-y-1 p-3.5">
           <button
             type="button"
-            onClick={() => setActiveTab('organizations')}
+            onClick={() => setActiveTab('dashboard')}
             className={`mb-2 w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold cursor-pointer transition-all ${
-              activeTab === 'organizations'
+              activeTab === 'dashboard'
                 ? 'bg-[#5d87ff] text-white shadow-lg shadow-blue-950/40'
                 : 'text-blue-100/85 hover:bg-white/10 hover:text-white'
             }`}
@@ -328,6 +330,17 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             <LayoutDashboard className="h-4 w-4" />
             <span>Dashboard</span>
           </button>
+
+          {onOpenCreateMeeting && (
+            <button
+              type="button"
+              onClick={onOpenCreateMeeting}
+              className="mb-2 w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md cursor-pointer transition-all"
+            >
+              <Video className="h-4 w-4" />
+              <span>Start Meeting</span>
+            </button>
+          )}
 
           <button
             type="button"
@@ -385,16 +398,6 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
               <span>{label}</span>
             </button>
           ))}
-          {onOpenOperationalReports && (
-            <button
-              type="button"
-              onClick={onOpenOperationalReports}
-              className="w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-blue-100/85 hover:bg-white/10 hover:text-white cursor-pointer"
-            >
-              <BarChart3 className="h-4 w-4" />
-              <span>Operational statistics</span>
-            </button>
-          )}
         </nav>
 
         {/* Bottom Sidebar Highlight Card */}
@@ -403,18 +406,14 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             <p className="text-[11px] font-medium text-blue-100 leading-relaxed">
               Manage organizations, accredited interpreters, and live operations.
             </p>
-            {onOpenOperationalReports ? (
-              <button
-                type="button"
-                onClick={onOpenOperationalReports}
-                className="w-full rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#1a3378] hover:bg-blue-50 flex items-center justify-between cursor-pointer shadow-sm"
-              >
-                <span>View Reports</span>
-                <BarChart3 className="h-3.5 w-3.5" />
-              </button>
-            ) : (
-              <div className="text-[10px] font-bold text-blue-200 truncate">{currentUser.fullName}</div>
-            )}
+            <button
+              type="button"
+              onClick={() => setActiveTab('dashboard')}
+              className="w-full rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#1a3378] hover:bg-blue-50 flex items-center justify-between cursor-pointer shadow-sm"
+            >
+              <span>View Statistics</span>
+              <BarChart3 className="h-3.5 w-3.5" />
+            </button>
           </div>
         </div>
       </aside>
@@ -443,7 +442,8 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
               className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 md:hidden"
               aria-label="Admin section"
             >
-              <option value="organizations">Dashboard</option>
+              <option value="dashboard">Dashboard</option>
+              <option value="organizations">Organizations</option>
               <option value="interpreters">Interpreters</option>
               <option value="supervisors">Supervisors</option>
               <option value="languages">Languages</option>
@@ -542,24 +542,14 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             </div>
           </div>
 
+      {activeTab === 'dashboard' && (
+        <div className="space-y-6">
+          <OperationalReports />
+        </div>
+      )}
+
       {activeTab === 'organizations' && (
         <div className="space-y-6">
-          <div>
-            <div className="mb-3 flex items-center justify-between">
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-600">Live overview</p>
-                <h2 className="mt-1 text-base font-black text-slate-900">Operational statistics</h2>
-              </div>
-              <button
-                type="button"
-                onClick={onOpenOperationalReports}
-                className="text-xs font-bold text-blue-700 hover:text-blue-900"
-              >
-                View full reports
-              </button>
-            </div>
-            <OperationalReports compact />
-          </div>
           <div className="grid gap-6 lg:grid-cols-2">
           <form onSubmit={registerOrganization} className="bg-white rounded-3xl border border-slate-200 shadow-sm p-6 space-y-3">
             <h3 className="text-sm font-bold text-gray-900">Open an organization</h3>
