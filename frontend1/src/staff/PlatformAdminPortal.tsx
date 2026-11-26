@@ -303,25 +303,26 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
   );
 
   return (
-    <div className="min-h-[calc(100vh-120px)] w-full bg-white flex">
-      <aside className="hidden w-64 shrink-0 flex-col bg-[#0f172a] text-slate-100 md:flex border-r border-slate-800">
+    <div className="min-h-[calc(100vh-66px)] w-full bg-[#f5f7fb] flex">
+      {/* Cobalt Blue Sidebar (SilverLogix style) */}
+      <aside className="hidden w-64 shrink-0 flex-col bg-gradient-to-b from-[#1a3378] via-[#1c3a8a] to-[#172c6b] text-white md:flex shadow-xl">
         <div className="flex h-20 items-center gap-3 px-5 border-b border-white/10">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-950/30">
-            <ShieldCheck className="h-5 w-5" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/15 border border-white/20 shadow-sm">
+            <ShieldCheck className="h-5 w-5 text-white" />
           </div>
           <div>
-            <p className="text-sm font-black tracking-tight">ORZO Admin</p>
-            <p className="text-[10px] text-slate-400">Platform management</p>
+            <p className="text-base font-black tracking-tight text-white">ORZO Admin</p>
+            <p className="text-[10px] font-medium text-blue-200">Platform management</p>
           </div>
         </div>
-        <nav className="flex-1 space-y-1 p-3">
+        <nav className="flex-1 space-y-1 p-3.5">
           <button
             type="button"
             onClick={() => setActiveTab('organizations')}
-            className={`mb-2 w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold cursor-pointer ${
+            className={`mb-2 w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold cursor-pointer transition-all ${
               activeTab === 'organizations'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                ? 'bg-[#5d87ff] text-white shadow-lg shadow-blue-950/40'
+                : 'text-blue-100/85 hover:bg-white/10 hover:text-white'
             }`}
           >
             <LayoutDashboard className="h-4 w-4" />
@@ -331,7 +332,7 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
           <button
             type="button"
             onClick={() => setSystemAdminOpen((open) => !open)}
-            className="mb-1 w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-200 hover:bg-white/10 cursor-pointer"
+            className="mb-1 w-full flex items-center justify-between rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-blue-100/90 hover:bg-white/10 cursor-pointer"
           >
             <span className="flex items-center gap-3">
               <ShieldCheck className="h-4 w-4" />
@@ -341,7 +342,7 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
           </button>
 
           {systemAdminOpen && (
-            <div className="mb-2 ml-3 space-y-1 border-l border-white/10 pl-3">
+            <div className="mb-2 ml-3 space-y-1 border-l border-white/15 pl-3">
               {([
                 ['organizations', 'Organizations', Building2],
                 ['interpreters', 'Interpreters', UserPlus],
@@ -351,10 +352,10 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
                   key={tab}
                   type="button"
                   onClick={() => setActiveTab(tab)}
-                  className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[11px] font-bold cursor-pointer ${
+                  className={`w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-left text-[11px] font-bold cursor-pointer transition-colors ${
                     activeTab === tab
-                      ? 'bg-white/15 text-white'
-                      : 'text-slate-400 hover:bg-white/10 hover:text-white'
+                      ? 'bg-white/20 text-white'
+                      : 'text-blue-200/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -374,10 +375,10 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
               key={tab}
               type="button"
               onClick={() => setActiveTab(tab)}
-              className={`w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold cursor-pointer ${
+              className={`w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold cursor-pointer transition-all ${
                 activeTab === tab
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-slate-300 hover:bg-white/10 hover:text-white'
+                  ? 'bg-[#5d87ff] text-white shadow-lg shadow-blue-950/40'
+                  : 'text-blue-100/85 hover:bg-white/10 hover:text-white'
               }`}
             >
               <Icon className="h-4 w-4" />
@@ -388,84 +389,158 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
             <button
               type="button"
               onClick={onOpenOperationalReports}
-              className="w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-bold text-slate-300 hover:bg-white/10 hover:text-white cursor-pointer"
+              className="w-full flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-left text-xs font-bold text-blue-100/85 hover:bg-white/10 hover:text-white cursor-pointer"
             >
               <BarChart3 className="h-4 w-4" />
               <span>Operational statistics</span>
             </button>
           )}
         </nav>
-        <div className="border-t border-white/10 p-4">
-          <p className="text-[10px] text-slate-400">Signed in as</p>
-          <p className="mt-1 truncate text-xs font-bold text-white">{currentUser.fullName}</p>
+
+        {/* Bottom Sidebar Highlight Card */}
+        <div className="p-3.5">
+          <div className="rounded-2xl border border-white/15 bg-white/10 p-4 backdrop-blur-sm space-y-3">
+            <p className="text-[11px] font-medium text-blue-100 leading-relaxed">
+              Manage organizations, accredited interpreters, and live operations.
+            </p>
+            {onOpenOperationalReports ? (
+              <button
+                type="button"
+                onClick={onOpenOperationalReports}
+                className="w-full rounded-xl bg-white px-3 py-2 text-xs font-extrabold text-[#1a3378] hover:bg-blue-50 flex items-center justify-between cursor-pointer shadow-sm"
+              >
+                <span>View Reports</span>
+                <BarChart3 className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <div className="text-[10px] font-bold text-blue-200 truncate">{currentUser.fullName}</div>
+            )}
+          </div>
         </div>
       </aside>
 
-      <main className="min-w-0 flex-1 overflow-auto bg-slate-50/70 p-4 sm:p-6">
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-blue-600">System Governance</p>
-            <h1 className="mt-1 text-xl font-black text-slate-900 sm:text-2xl">Platform Administration</h1>
+      <main className="min-w-0 flex-1 flex flex-col overflow-auto bg-[#f5f7fb]">
+        {/* Top White Search & Profile Bar */}
+        <div className="bg-white border-b border-slate-200/80 px-5 sm:px-8 py-3.5 flex flex-wrap items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-2.5" />
+            <input
+              type="text"
+              value={searchAudit}
+              onChange={(e) => setSearchAudit(e.target.value)}
+              placeholder="Search organizations, interpreters, logs..."
+              className="w-full pl-10 pr-14 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/80 text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition"
+            />
+            <span className="hidden sm:inline-block absolute right-2.5 top-1.5 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+              Ctrl + K
+            </span>
           </div>
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
-            className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 md:hidden"
-            aria-label="Admin section"
-          >
-            <option value="organizations">Dashboard</option>
-            <option value="interpreters">Interpreters</option>
-            <option value="supervisors">Supervisors</option>
-            <option value="languages">Languages</option>
-            <option value="verification">Accreditation</option>
-            <option value="settings">Configuration</option>
-            <option value="audit">Audit Logs</option>
-          </select>
-          <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-xs sm:flex">
-            <ShieldCheck className="h-4 w-4 text-emerald-600" />
-            <span className="font-bold">Secure admin session</span>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={activeTab}
+              onChange={(e) => setActiveTab(e.target.value as typeof activeTab)}
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 md:hidden"
+              aria-label="Admin section"
+            >
+              <option value="organizations">Dashboard</option>
+              <option value="interpreters">Interpreters</option>
+              <option value="supervisors">Supervisors</option>
+              <option value="languages">Languages</option>
+              <option value="verification">Accreditation</option>
+              <option value="settings">Configuration</option>
+              <option value="audit">Audit Logs</option>
+            </select>
+            <div className="hidden sm:flex items-center gap-2.5 pl-2">
+              <div className="h-9 w-9 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs">
+                {currentUser.fullName ? currentUser.fullName.slice(0, 2).toUpperCase() : 'AD'}
+              </div>
+              <div className="text-left leading-tight">
+                <p className="text-xs font-bold text-slate-900">{currentUser.fullName}</p>
+                <p className="text-[10px] font-semibold text-slate-400">Platform Admin</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Summary KPI Cards */}
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
+        <div className="p-5 sm:p-8 flex-1">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Organizations</p>
-              <p className="mt-1 text-2xl font-black text-slate-900">{registeredOrgs.length}</p>
+              <h1 className="text-2xl font-black text-slate-900 tracking-tight">Dashboard</h1>
+              <p className="mt-0.5 text-xs font-medium text-slate-500">Overview of your platform operations</p>
             </div>
-            <div className="h-11 w-11 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Building2 className="h-5 w-5" />
+            <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-xs">
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
+              <span>Secure admin session</span>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Interpreters</p>
-              <p className="mt-1 text-2xl font-black text-slate-900">{interpreters.length}</p>
+
+          {/* 4 KPI Summary Cards with Soft Icons & Mini Sparklines */}
+          <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500">Organizations</p>
+                  <p className="text-2xl font-black text-slate-900 leading-tight">{registeredOrgs.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-emerald-600">↑ Active institutions</span>
+                <svg viewBox="0 0 60 20" className="w-14 h-5 text-blue-500"><path d="M2 16 Q 15 14, 24 10 T 42 8 T 58 3" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </div>
             </div>
-            <div className="h-11 w-11 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <Users className="h-5 w-5" />
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <Users className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500">Interpreters</p>
+                  <p className="text-2xl font-black text-slate-900 leading-tight">{interpreters.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-emerald-600">↑ Accredited registry</span>
+                <svg viewBox="0 0 60 20" className="w-14 h-5 text-emerald-500"><path d="M2 15 Q 18 6, 30 11 T 48 5 T 58 7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center shrink-0">
+                  <Languages className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500">Languages</p>
+                  <p className="text-2xl font-black text-slate-900 leading-tight">{languages.filter((l) => l.isActive).length}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-amber-600">Active catalog</span>
+                <svg viewBox="0 0 60 20" className="w-14 h-5 text-amber-500"><path d="M2 12 Q 16 4, 28 13 T 44 9 T 58 14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex flex-col justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-11 w-11 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-slate-500">Audit Logs</p>
+                  <p className="text-2xl font-black text-slate-900 leading-tight">{auditLogs.length}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="font-bold text-purple-600">Immutable events</span>
+                <svg viewBox="0 0 60 20" className="w-14 h-5 text-purple-500"><path d="M2 17 Q 18 12, 30 9 T 46 6 T 58 2" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+              </div>
             </div>
           </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Languages</p>
-              <p className="mt-1 text-2xl font-black text-slate-900">{languages.filter((l) => l.isActive).length}</p>
-            </div>
-            <div className="h-11 w-11 rounded-2xl bg-violet-50 text-violet-600 flex items-center justify-center">
-              <Languages className="h-5 w-5" />
-            </div>
-          </div>
-          <div className="rounded-2xl border border-slate-200/80 bg-white p-4 shadow-xs flex items-center justify-between">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Audit Logs</p>
-              <p className="mt-1 text-2xl font-black text-slate-900">{auditLogs.length}</p>
-            </div>
-            <div className="h-11 w-11 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Lock className="h-5 w-5" />
-            </div>
-          </div>
-        </div>
 
       {activeTab === 'organizations' && (
         <div className="space-y-6">
@@ -1007,6 +1082,7 @@ export const PlatformAdminPortal: React.FC<PlatformAdminPortalProps> = ({
           </div>
         </div>
       )}
+        </div>
       </main>
 
       {/* Add Language Modal */}
