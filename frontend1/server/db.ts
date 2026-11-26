@@ -744,28 +744,15 @@ class DatabaseStore {
   currentUserId: string | null = 'usr-client-admin-1';
 
   noteInterpreterPresence(userId: string) {
-    const interpreter = this.interpreters.find((person) => person.userId === userId);
-    if (!interpreter) return;
     this.interpreterSeen.set(userId, Date.now());
-    interpreter.availability = interpreter.activeSessionId ? 'busy' : 'available';
   }
 
   refreshInterpreterPresence() {
-    const now = Date.now();
-    for (const interpreter of this.interpreters) {
-      if (interpreter.activeSessionId) {
-        interpreter.availability = 'busy';
-        continue;
-      }
-      const seen = this.interpreterSeen.get(interpreter.userId) || 0;
-      interpreter.availability = now - seen < 20000 ? 'available' : 'offline';
-    }
+    // Availability is controlled exclusively by the interpreter (ON/OFF toggle).
   }
 
   markInterpreterOffline(userId: string) {
     this.interpreterSeen.delete(userId);
-    const interpreter = this.interpreters.find((person) => person.userId === userId);
-    if (interpreter && !interpreter.activeSessionId) interpreter.availability = 'offline';
   }
 
   private webSessions = new Map<string, string>();

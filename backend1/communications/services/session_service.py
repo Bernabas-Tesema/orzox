@@ -270,9 +270,12 @@ class SessionService:
             session.request.status = "completed"
             session.request.save(update_fields=["status", "updated_at"])
 
-        # Reset interpreter availability so they can receive new rings
+        # Restore interpreter from busy -> available only if they did not turn availability OFF
         if session.interpreter_account:
-            Interpreter.objects.filter(email__iexact=session.interpreter_account.email).update(availability="available")
+            Interpreter.objects.filter(
+                email__iexact=session.interpreter_account.email,
+                availability="busy",
+            ).update(availability="available")
 
         logger.info("Session %s completed (duration=%ds)", session.session_reference, session.duration_seconds)
         return session
@@ -313,9 +316,12 @@ class SessionService:
             session.request.cancellation_reason = reason
             session.request.save(update_fields=["status", "cancellation_reason", "updated_at"])
 
-        # Reset interpreter availability so they can receive new rings
+        # Restore interpreter from busy -> available only if they did not turn availability OFF
         if session.interpreter_account:
-            Interpreter.objects.filter(email__iexact=session.interpreter_account.email).update(availability="available")
+            Interpreter.objects.filter(
+                email__iexact=session.interpreter_account.email,
+                availability="busy",
+            ).update(availability="available")
 
         logger.info("Session %s cancelled by %s (reason: %s)", session.session_reference, user_id, reason)
         return session

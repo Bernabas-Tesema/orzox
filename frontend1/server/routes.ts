@@ -727,9 +727,9 @@ router.post('/requests/:reference/cancel', (req: Request, res: Response) => {
   if (reqItem.assignedInterpreterId) {
     const interp = db.interpreters.find(i => i.id === reqItem.assignedInterpreterId);
     if (interp && interp.activeSessionId === session?.id) {
-      interp.availability = 'available';
+      if (interp.availability === 'busy') interp.availability = 'available';
       interp.activeSessionId = undefined;
-      offerToNewlyFreeInterpreter(interp.id);
+      if (interp.availability === 'available') offerToNewlyFreeInterpreter(interp.id);
     }
   }
 
@@ -1036,10 +1036,10 @@ router.post('/sessions/:id/end', (req: Request, res: Response) => {
   if (session.interpreterId) {
     const interp = db.interpreters.find(i => i.id === session.interpreterId);
     if (interp) {
-      interp.availability = 'available';
+      if (interp.availability === 'busy') interp.availability = 'available';
       interp.activeSessionId = undefined;
       interp.totalSessionsCompleted += 1;
-      offerToNewlyFreeInterpreter(interp.id);
+      if (interp.availability === 'available') offerToNewlyFreeInterpreter(interp.id);
     }
   }
 

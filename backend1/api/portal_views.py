@@ -1004,9 +1004,9 @@ def session_end(request: HttpRequest, session_id: str) -> JsonResponse:
         InterpretationRequest.objects.filter(active_session_id=session_id).update(
             status="completed", updated_at=timezone.now()
         )
-    # Free the interpreter so they can receive new rings (keep offline if they turned OFF).
+    # Free the interpreter only if they were busy in a call (never auto-enable if offline).
     if session.interpreter_id:
-        Interpreter.objects.filter(pk=session.interpreter_id).exclude(availability="offline").update(
+        Interpreter.objects.filter(pk=session.interpreter_id, availability="busy").update(
             availability="available"
         )
         dispatch.reroute_waiting_requests()
@@ -1165,7 +1165,7 @@ def completions(request: HttpRequest) -> JsonResponse:
             status="completed", updated_at=timezone.now()
         )
         if session.interpreter_id:
-            Interpreter.objects.filter(pk=session.interpreter_id).exclude(availability="offline").update(
+            Interpreter.objects.filter(pk=session.interpreter_id, availability="busy").update(
                 availability="available"
             )
     report = CompletionReport.objects.create(
