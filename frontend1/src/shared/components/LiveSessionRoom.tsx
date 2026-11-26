@@ -159,6 +159,11 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     return () => clearInterval(timer);
   }, []);
 
+  // Reset takingCall when switching to a different live session
+  useEffect(() => {
+    setTakingCall(null);
+  }, [session.id]);
+
   // Poll waiting calls (interpreters only) -- stops when ending the call.
   // Poll every 2 seconds so new calls appear quickly during an active session.
   useEffect(() => {
@@ -174,7 +179,7 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     fetchWaiting();
     const timer = setInterval(fetchWaiting, 2000);
     return () => clearInterval(timer);
-  }, [currentUser.role]);
+  }, [currentUser.role, session.id, endingCall]);
 
   const handleTakeCall = async (reference: string) => {
     setTakingCall(reference);
@@ -894,8 +899,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
           const widthClass = chatWidth === 'narrow' ? 'md:w-72' : chatWidth === 'wide' ? 'md:w-[28rem] lg:w-[32rem]' : 'md:w-80 lg:w-96';
           return (
         <aside className={`w-full ${widthClass} max-h-[48vh] md:max-h-none flex-shrink-0 bg-white border-t md:border-t-0 md:border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
-          {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting & chat not expanded tall) */}
-          {hasWaiting && chatHeight !== 'tall' && (
+          {/* Top Card: Incoming Calls (interpreters only when another caller is waiting) */}
+          {hasWaiting && (
             <div className="rounded-2xl border border-emerald-200 bg-slate-50 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
@@ -915,18 +920,15 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
               {visibleWaiting.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-                const createdMs = call.createdAt ? new Date(call.createdAt).getTime() : Date.now();
-                const secondsLeft = expiresAt
-                  ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
-                  : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
-                const isMissed = secondsLeft <= 0;
+                const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : null;
+                const isMissed = secondsLeft !== null && secondsLeft <= 0;
                 return (
                   <div key={call.reference} className={`rounded-xl border-2 p-3 space-y-2 shadow-xs transition-colors ${isMissed ? 'border-red-500 bg-red-100/90' : 'border-emerald-400 bg-emerald-50/70'}`}>
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono text-[11px] text-slate-800 font-bold">{call.reference}</span>
                       <div className="flex items-center gap-1.5">
                         <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-md ${isMissed ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
-                          {secondsLeft}s
+                          {secondsLeft !== null ? `${secondsLeft}s` : 'Waiting'}
                         </span>
                         <button
                           type="button"
@@ -938,7 +940,10 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                         </button>
                       </div>
                     </div>
-                    <p className="font-bold text-slate-900 text-xs leading-tight truncate">{call.requesterName} <span className="font-normal text-slate-600">wants to connect</span></p>
+                    <p className="font-bold text-slate-900 text-xs leading-tight truncate">
+                      {call.requesterName}
+                      {call.organizationName ? <span className="font-normal text-slate-600"> · {call.organizationName}</span> : <span className="font-normal text-slate-600"> wants to connect</span>}
+                    </p>
                     <div className="flex items-center gap-1.5 text-[11px]">
                       <span className="font-black text-blue-700">{call.sourceLanguage?.toUpperCase()}</span>
                       <span className="text-slate-400">→</span>

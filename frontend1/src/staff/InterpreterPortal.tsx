@@ -94,16 +94,6 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
     return () => clearInterval(timer);
   }, []);
 
-  // Poll live waiting calls (calls ringing right now with countdown)
-  const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
-  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>(() => {
-    try {
-      const raw = localStorage.getItem(`orzo-cleared-waiting-${currentUser.id}`);
-      return raw ? (JSON.parse(raw) as string[]) : [];
-    } catch {
-      return [];
-    }
-  });
   const [dismissedMissedId, setDismissedMissedId] = useState<string | null>(() => {
     try {
       return localStorage.getItem(`orzo-dismissed-missed-${currentUser.id}`);
@@ -111,20 +101,6 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
       return null;
     }
   });
-  const [takingWaitingCall, setTakingWaitingCall] = useState<string | null>(null);
-
-  const addClearedWaitingRefs = (refs: string[]) => {
-    setClearedWaitingRefs((prev) => {
-      const next = Array.from(new Set([...prev, ...refs]));
-      try {
-        localStorage.setItem(`orzo-cleared-waiting-${currentUser.id}`, JSON.stringify(next.slice(-200)));
-      } catch {
-        // ignore storage quota
-      }
-      return next;
-    });
-    api.clearWaitingCalls(refs).catch(() => undefined);
-  };
 
   const dismissMissedCard = (id: string, requestReference?: string) => {
     setDismissedMissedId(id);
@@ -135,18 +111,6 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
     }
     api.clearWaitingCalls(requestReference ? [requestReference] : [], id).catch(() => undefined);
   };
-  useEffect(() => {
-    if (!profile) return;
-    const fetch = async () => {
-      try {
-        const res = await api.getWaitingCalls();
-        setWaitingCalls(res.waitingCalls || []);
-      } catch { /* ignore */ }
-    };
-    fetch();
-    const timer = setInterval(fetch, 3000);
-    return () => clearInterval(timer);
-  }, [profile?.id]);
 
   useEffect(() => {
     if (!pendingAssignment || timeLeft > 0 || expiredFor.current === pendingAssignment.id) return;
@@ -723,7 +687,7 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
         </div>
       )}
 
-      {!pendingAssignment && !profile.activeSessionId && !showMissedCall && (!isOnline || waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length === 0) && (
+      {!pendingAssignment && !profile.activeSessionId && !showMissedCall && (
         <div className="rounded-2xl border border-white/15 bg-white/5 p-5">
           <p className="text-sm font-bold">{isOnline ? 'Waiting for a request' : 'You are currently Offline'}</p>
           <p className="mt-1 text-xs text-white/70">
@@ -731,113 +695,6 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
               ? 'When a client starts a request, every free matching interpreter rings at once. Answer first to take the call.'
               : 'Turn the Availability toggle ON to receive incoming interpretation requests.'}
           </p>
-        </div>
-      )}
-
-      {/* Compact waiting call cards — only shown when interpreter is ON (Online) */}
-      {isOnline && waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length > 0 && !pendingAssignment && (
-        <div className="space-y-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <p className="text-xs font-bold uppercase tracking-wider text-emerald-200">
-                Waiting Calls ({waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).length})
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => addClearedWaitingRefs(waitingCalls.map((c) => c.reference))}
-              className="text-[11px] font-bold text-white/70 hover:text-white px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 cursor-pointer"
-            >
-              Clear History
-            </button>
-          </div>
-          {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).map((call) => {
-            const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-            const createdMs = call.createdAt ? new Date(call.createdAt).getTime() : Date.now();
-            const secondsLeft = expiresAt
-              ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
-              : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
-            const isMissed = secondsLeft <= 0;
-            return (
-              <div
-                key={call.reference}
-                className={`rounded-2xl border p-3.5 space-y-2 transition-colors ${
-                  isMissed
-                    ? 'border-red-500/60 bg-red-950/70'
-                    : 'border-emerald-400/50 bg-emerald-950/60'
-                }`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono text-white/80 font-bold">{call.reference}</span>
-                    {call.urgency === 'emergency' && (
-                      <span className="text-[9px] bg-red-600 text-white px-2 py-0.5 rounded-full font-black uppercase">
-                        Emergency
-                      </span>
-                    )}
-                  </div>
-                  <span className={`text-lg font-black tabular-nums ${isMissed ? 'text-red-300' : 'text-emerald-200'}`}>
-                    {`${secondsLeft}s`}
-                  </span>
-                </div>
-
-                <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
-                  <div
-                    className={`h-1 rounded-full transition-all duration-1000 ${isMissed ? 'bg-red-400' : 'bg-emerald-400'}`}
-                    style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
-                  />
-                </div>
-
-                <div className="text-xs text-white/80 flex items-center justify-between gap-2">
-                  <span className="font-semibold text-white truncate">
-                    {languages.find(l => l.code === call.sourceLanguage)?.name || call.sourceLanguage?.toUpperCase()}{' '}
-                    → {languages.find(l => l.code === call.targetLanguage)?.name || call.targetLanguage?.toUpperCase()}
-                  </span>
-                  <span className="text-[11px] text-white/60 truncate">{call.requesterName}</span>
-                </div>
-
-                {isMissed ? (
-                  <div className="flex items-center justify-between gap-2 pt-1">
-                    <button
-                      type="button"
-                      disabled
-                      className="w-full h-9 rounded-xl bg-red-600 text-white text-xs font-extrabold flex items-center justify-center cursor-not-allowed"
-                    >
-                      Missed Call
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => addClearedWaitingRefs([call.reference])}
-                      className="h-9 px-3 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold cursor-pointer shrink-0"
-                    >
-                      Clear
-                    </button>
-                  </div>
-                ) : onTakeWaitingCall && (
-                  <button
-                    type="button"
-                    disabled={takingWaitingCall === call.reference}
-                    onClick={async () => {
-                      setTakingWaitingCall(call.reference);
-                      try {
-                        await onTakeWaitingCall(call.reference);
-                      } catch (e: any) {
-                        alert(e?.message || 'Could not take call');
-                      } finally {
-                        setTakingWaitingCall(null);
-                      }
-                    }}
-                    className="w-full h-9 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 transition-all disabled:opacity-50"
-                  >
-                    {takingWaitingCall === call.reference ? 'Connecting...' : (
-                      <><PhoneCall className="w-3.5 h-3.5" /> Take This Call</>
-                    )}
-                  </button>
-                )}
-              </div>
-            );
-          })}
         </div>
       )}
       </section>
