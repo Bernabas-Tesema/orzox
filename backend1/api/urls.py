@@ -38,6 +38,7 @@ urlpatterns = [
     path("sessions/<str:session_id>/join", portal_views.session_join),
     path("sessions/<str:session_id>/heartbeat", portal_views.session_heartbeat),
     path("sessions/<str:session_id>/end", portal_views.session_end),
+    path("sessions/<str:session_id>/chat", portal_views.session_chat),
     path("sessions/<str:session_id>/livekit-token", portal_views.livekit_token),
     path("livekit/config", portal_views.livekit_config),
     path("completions", portal_views.completions),

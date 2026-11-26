@@ -8,6 +8,7 @@ import secrets
 from typing import Any, Optional
 
 from django.conf import settings
+from django.core.cache import cache
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
@@ -1008,6 +1009,37 @@ def session_end(request: HttpRequest, session_id: str) -> JsonResponse:
         request_reference=session.request_reference, outcome="pending"
     ).update(outcome="expired", responded_at=timezone.now())
     return JsonResponse({"success": True, "session": _session_json(session), "message": "Session ended"})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST"])
+def session_chat(request: HttpRequest, session_id: str) -> JsonResponse:
+    """Two-way session chat backed by Django cache (zero-migration) for client & interpreter."""
+    account = _account_from_request(request)
+    if not account:
+        return _error("Authentication required", 401)
+    cache_key = f"orzo:session_chat:{session_id}"
+    messages = list(cache.get(cache_key) or [])
+    if request.method == "GET":
+        return JsonResponse({"messages": messages})
+
+    data = _body(request)
+    text = str(data.get("text") or "").strip()
+    if not text:
+        return _error("Message text is required")
+    msg_id = str(data.get("id") or f"msg-{secrets.token_hex(4)}")
+    timestamp = str(data.get("timestamp") or timezone.now().strftime("%H:%M"))
+    entry = {
+        "id": msg_id,
+        "senderId": account.id,
+        "senderName": account.full_name,
+        "text": text,
+        "timestamp": timestamp,
+    }
+    if not any(m.get("id") == msg_id for m in messages):
+        messages.append(entry)
+        cache.set(cache_key, messages[-200:], timeout=86400)
+    return JsonResponse({"success": True, "message": entry, "messages": messages})
 
 
 @csrf_exempt

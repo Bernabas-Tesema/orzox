@@ -2012,6 +2012,34 @@ router.get('/staff', (req: Request, res: Response) => {
   res.json({ staff });
 });
 
+const sessionChats = new Map<string, Array<{ id: string; senderId: string; senderName: string; text: string; timestamp: string }>>();
+
+router.get('/sessions/:id/chat', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  res.json({ messages: sessionChats.get(req.params.id) || [] });
+});
+
+router.post('/sessions/:id/chat', (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user) return res.status(401).json({ error: 'Not authenticated.' });
+  const text = String(req.body?.text || '').trim();
+  if (!text) return res.status(400).json({ error: 'Message text is required.' });
+  const list = sessionChats.get(req.params.id) || [];
+  const entry = {
+    id: String(req.body?.id || `msg-${Date.now()}`),
+    senderId: user.id,
+    senderName: user.fullName,
+    text,
+    timestamp: String(req.body?.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })),
+  };
+  if (!list.some((m) => m.id === entry.id)) {
+    list.push(entry);
+    sessionChats.set(req.params.id, list.slice(-200));
+  }
+  res.json({ success: true, message: entry, messages: list });
+});
+
 router.get('/waiting-calls', (req: Request, res: Response) => {
   const user = (req as any).user;
   if (!user) return res.status(401).json({ error: 'Not authenticated.' });

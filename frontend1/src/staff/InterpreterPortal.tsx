@@ -712,10 +712,13 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
               Clear History
             </button>
           </div>
-          {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).slice(0, 1).map((call) => {
+          {waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference)).map((call) => {
             const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-            const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : 0;
-            const isMissed = !call.queued && secondsLeft <= 0;
+            const createdMs = call.createdAt ? new Date(call.createdAt).getTime() : Date.now();
+            const secondsLeft = expiresAt
+              ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+              : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
+            const isMissed = secondsLeft <= 0;
             return (
               <div
                 key={call.reference}
@@ -735,18 +738,16 @@ export const InterpreterPortal: React.FC<InterpreterPortalProps> = ({
                     )}
                   </div>
                   <span className={`text-lg font-black tabular-nums ${isMissed ? 'text-red-300' : 'text-emerald-200'}`}>
-                    {call.queued ? 'Queued' : isMissed ? '0s' : `${secondsLeft}s`}
+                    {`${secondsLeft}s`}
                   </span>
                 </div>
 
-                {!call.queued && expiresAt > 0 && (
-                  <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
-                    <div
-                      className={`h-1 rounded-full transition-all duration-1000 ${isMissed ? 'bg-red-400' : 'bg-emerald-400'}`}
-                      style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
-                    />
-                  </div>
-                )}
+                <div className="w-full bg-white/10 rounded-full h-1 overflow-hidden">
+                  <div
+                    className={`h-1 rounded-full transition-all duration-1000 ${isMissed ? 'bg-red-400' : 'bg-emerald-400'}`}
+                    style={{ width: `${Math.min(100, (secondsLeft / 60) * 100)}%` }}
+                  />
+                </div>
 
                 <div className="text-xs text-white/80 flex items-center justify-between gap-2">
                   <span className="font-semibold text-white truncate">

@@ -519,6 +519,20 @@ export const api = {
   },
 
   // Waiting calls queue
+  async getSessionChat(sessionId: string): Promise<{
+    messages: Array<{ id: string; senderId: string; senderName: string; text: string; timestamp: string }>;
+  }> {
+    return request(`/sessions/${sessionId}/chat`);
+  },
+  async sendSessionChat(sessionId: string, payload: { id: string; text: string; timestamp: string }): Promise<{
+    success: boolean;
+    messages: Array<{ id: string; senderId: string; senderName: string; text: string; timestamp: string }>;
+  }> {
+    return request(`/sessions/${sessionId}/chat`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
   async getWaitingCalls(): Promise<{ waitingCalls: InterpretationRequest[] }> {
     return request('/waiting-calls');
   },

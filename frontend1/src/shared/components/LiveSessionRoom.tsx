@@ -30,6 +30,9 @@ import {
   Send,
   MessageSquare,
   Users,
+  Maximize2,
+  Minimize2,
+  X,
 } from 'lucide-react';
 
 interface ChatMessageItem {
@@ -84,11 +87,13 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
   const [hasRemoteVideo, setHasRemoteVideo] = useState<boolean>(false);
   const [remoteIsMuted, setRemoteIsMuted] = useState<boolean>(false);
   const [waitingCalls, setWaitingCalls] = useState<InterpretationRequest[]>([]);
+  const [clearedWaitingRefs, setClearedWaitingRefs] = useState<string[]>([]);
   const [takingCall, setTakingCall] = useState<string | null>(null);
   // Live countdown ticker — increments every second to force sidebar re-renders
   const [tick, setTick] = useState(0);
   // Right-side Live Session Chat
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const [chatWidth, setChatWidth] = useState<'narrow' | 'normal' | 'wide'>('normal');
   const [rightTab, setRightTab] = useState<'chat' | 'participants'>('chat');
   const [chatMessages, setChatMessages] = useState<ChatMessageItem[]>([]);
   const [unreadChat, setUnreadChat] = useState(0);
@@ -528,6 +533,39 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  // Poll backend session chat so messages work reliably on both client & interpreter sides
+  useEffect(() => {
+    let stopped = false;
+    const syncChat = async () => {
+      try {
+        const res = await api.getSessionChat(session.id);
+        if (stopped || !res.messages) return;
+        setChatMessages((prev) => {
+          const byId = new Map(prev.map((m) => [m.id, m]));
+          let addedRemote = 0;
+          for (const m of res.messages) {
+            if (!byId.has(m.id)) {
+              byId.set(m.id, m);
+              if (m.senderId !== currentUser.id) addedRemote++;
+            }
+          }
+          if (addedRemote > 0) {
+            setUnreadChat((c) => c + addedRemote);
+          }
+          return Array.from(byId.values());
+        });
+      } catch {
+        // ignore transient poll errors
+      }
+    };
+    syncChat();
+    const timer = window.setInterval(syncChat, 1500);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [session.id, currentUser.id]);
+
   const handleSendChat = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = chatInput.trim();
@@ -541,13 +579,14 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
     };
     setChatMessages((prev) => [...prev, msg]);
     setChatInput('');
+    api.sendSessionChat(session.id, { id: msg.id, text: msg.text, timestamp: msg.timestamp }).catch(() => undefined);
     try {
       if (roomRef.current?.localParticipant) {
         const bytes = new TextEncoder().encode(JSON.stringify({ type: 'chat', ...msg }));
         await roomRef.current.localParticipant.publishData(bytes, { reliable: true });
       }
     } catch {
-      // ignore if disconnected
+      // backend sync already handles delivery
     }
   };
 
@@ -814,40 +853,56 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
         </div>
 
         {/* Right Sidebar: Incoming / Waiting Calls Card + Live Session Chat */}
-        {(showRightPanel || (currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall)) && (
-        <aside className="w-80 lg:w-96 flex-shrink-0 bg-white border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden">
+        {(() => {
+          const visibleWaiting = waitingCalls.filter((c) => !clearedWaitingRefs.includes(c.reference));
+          const hasWaiting = currentUser.role === 'interpreter' && visibleWaiting.length > 0 && !endingCall;
+          if (!showRightPanel && !hasWaiting) return null;
+          const widthClass = chatWidth === 'narrow' ? 'w-72' : chatWidth === 'wide' ? 'w-[28rem] lg:w-[32rem]' : 'w-80 lg:w-96';
+          return (
+        <aside className={`${widthClass} flex-shrink-0 bg-white border-l border-slate-200 flex flex-col gap-3 p-3 overflow-hidden transition-all duration-200`}>
           {/* Top Card: Incoming / Waiting Calls (interpreters only when calls are waiting) */}
-          {currentUser.role === 'interpreter' && waitingCalls.length > 0 && !endingCall && (
-            <div className="rounded-2xl border border-red-200 bg-red-50/60 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
-              <div className="flex items-center justify-between">
+          {hasWaiting && (
+            <div className="rounded-2xl border border-emerald-200 bg-slate-50 p-3 flex flex-col gap-2.5 max-h-64 overflow-y-auto flex-shrink-0">
+              <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
-                  <PhoneCall className="w-4 h-4 text-red-600 animate-pulse" />
+                  <PhoneCall className="w-4 h-4 text-emerald-600 animate-pulse" />
                   <span className="text-xs font-black text-slate-900 uppercase tracking-wide">
-                    Incoming Call ({waitingCalls.length})
+                    Incoming Call ({visibleWaiting.length})
                   </span>
                 </div>
-                <span className="text-[10px] font-semibold text-slate-500">Current call ends first</span>
+                <button
+                  type="button"
+                  onClick={() => setClearedWaitingRefs((prev) => [...prev, ...visibleWaiting.map((c) => c.reference)])}
+                  className="text-[10px] font-bold text-slate-600 hover:text-slate-900 bg-white border border-slate-200 px-2 py-0.5 rounded-lg cursor-pointer"
+                >
+                  Clear All
+                </button>
               </div>
-              {waitingCalls.map((call) => {
+              {visibleWaiting.map((call) => {
                 void tick;
                 const expiresAt = call.assignmentExpiresAt ? new Date(call.assignmentExpiresAt).getTime() : 0;
-                const secondsLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000)) : null;
-                if (secondsLeft !== null && secondsLeft === 0) return null;
-                const waitedSeconds = call.createdAt
-                  ? Math.max(0, Math.floor((Date.now() - new Date(call.createdAt).getTime()) / 1000))
-                  : 0;
-                const urgent = secondsLeft !== null && secondsLeft <= 10;
+                const createdMs = call.createdAt ? new Date(call.createdAt).getTime() : Date.now();
+                const secondsLeft = expiresAt
+                  ? Math.max(0, Math.ceil((expiresAt - Date.now()) / 1000))
+                  : Math.max(0, 60 - Math.max(0, Math.floor((Date.now() - createdMs) / 1000)));
+                const isMissed = secondsLeft <= 0;
                 return (
-                  <div key={call.reference} className="rounded-xl border border-red-200 bg-white p-3 space-y-2 shadow-xs">
+                  <div key={call.reference} className={`rounded-xl border p-3 space-y-2 shadow-xs transition-colors ${isMissed ? 'border-red-300 bg-red-50' : 'border-emerald-300 bg-emerald-50/70'}`}>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-[11px] text-blue-700 font-bold">{call.reference}</span>
-                      {secondsLeft !== null ? (
-                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${urgent ? 'bg-red-100 text-red-700 animate-pulse' : 'bg-amber-100 text-amber-800'}`}>{secondsLeft}s</span>
-                      ) : (
-                        <span className="text-[10px] font-mono bg-blue-50 text-blue-700 px-2 py-0.5 rounded-md font-bold">
-                          Queued · {formatTimer(waitedSeconds)}
+                      <span className="font-mono text-[11px] text-slate-800 font-bold">{call.reference}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-[11px] font-mono font-black px-2 py-0.5 rounded-md ${isMissed ? 'bg-red-600 text-white' : 'bg-emerald-600 text-white'}`}>
+                          {secondsLeft}s
                         </span>
-                      )}
+                        <button
+                          type="button"
+                          onClick={() => setClearedWaitingRefs((prev) => [...prev, call.reference])}
+                          className="p-0.5 rounded text-slate-400 hover:text-slate-700 cursor-pointer"
+                          title="Clear card"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                     <p className="font-bold text-slate-900 text-xs leading-tight truncate">{call.requesterName} <span className="font-normal text-slate-500">wants to connect</span></p>
                     <div className="flex items-center gap-1.5 text-[11px]">
@@ -860,42 +915,68 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
                         <span className="ml-auto text-[9px] bg-red-600 text-white px-1.5 py-0.5 rounded font-black uppercase">Emergency</span>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleTakeCall(call.reference)}
-                      disabled={takingCall === call.reference}
-                      className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
-                    >
-                      <PhoneCall className="w-3.5 h-3.5" />
-                      {takingCall === call.reference ? 'Connecting...' : 'Take Call'}
-                    </button>
+                    {isMissed ? (
+                      <div className="w-full py-2 rounded-xl bg-red-600 text-white text-xs font-extrabold flex items-center justify-center">
+                        Missed Call
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => handleTakeCall(call.reference)}
+                        disabled={takingCall === call.reference}
+                        className="w-full py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-extrabold cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-50 transition-all"
+                      >
+                        <PhoneCall className="w-3.5 h-3.5" />
+                        {takingCall === call.reference ? 'Connecting...' : 'Take Call'}
+                      </button>
+                    )}
                   </div>
                 );
               })}
             </div>
           )}
 
-          {/* Bottom Card: Session Chat & Participants (matches reference green-pill style) */}
+          {/* Bottom Card: Session Chat & Participants (matches reference green-pill style + width controls) */}
           <div className="flex-1 min-h-0 rounded-2xl border border-slate-200 bg-white flex flex-col overflow-hidden shadow-xs">
-            <div className="p-2.5 border-b border-slate-100 grid grid-cols-2 gap-1.5 bg-slate-50/70">
+            <div className="p-2 border-b border-slate-100 flex items-center gap-1.5 bg-slate-50/70">
+              <div className="flex-1 grid grid-cols-2 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setRightTab('chat')}
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                    rightTab === 'chat' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" />
+                  <span>Session Chat</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRightTab('participants')}
+                  className={`py-2 px-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
+                    rightTab === 'participants' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
+                  }`}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  <span>Participants</span>
+                </button>
+              </div>
               <button
                 type="button"
-                onClick={() => setRightTab('chat')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-                  rightTab === 'chat' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-                }`}
+                onClick={() => setChatWidth((w) => (w === 'wide' ? 'normal' : w === 'normal' ? 'narrow' : 'normal'))}
+                disabled={chatWidth === 'narrow'}
+                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                title="Make chat narrower"
               >
-                <MessageSquare className="w-3.5 h-3.5" />
-                <span>Session Chat</span>
+                <Minimize2 className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
-                onClick={() => setRightTab('participants')}
-                className={`py-2 px-3 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors ${
-                  rightTab === 'participants' ? 'bg-emerald-600 text-white shadow-xs' : 'text-slate-600 hover:bg-slate-200/60'
-                }`}
+                onClick={() => setChatWidth((w) => (w === 'narrow' ? 'normal' : w === 'normal' ? 'wide' : 'wide'))}
+                disabled={chatWidth === 'wide'}
+                className="p-2 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-100 disabled:opacity-40 cursor-pointer"
+                title="Make chat wider"
               >
-                <Users className="w-3.5 h-3.5" />
-                <span>Participants</span>
+                <Maximize2 className="w-3.5 h-3.5" />
               </button>
             </div>
 
@@ -968,7 +1049,8 @@ export const LiveSessionRoom: React.FC<LiveSessionRoomProps> = ({
             )}
           </div>
         </aside>
-        )}
+          );
+        })()}
 
         {/* Sidebar Glossary */}
         {showTerminology && (
