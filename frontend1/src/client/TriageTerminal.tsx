@@ -20,6 +20,7 @@ import { workplaceContext, workplaceLanguageLabel, workplaceOf } from '../shared
 interface WaitingStateProps {
   ringingRequest: InterpretationRequest | undefined;
   interpreterReady: boolean;
+  declinedByOther?: boolean;
   sourceLanguage: string;
   targetLanguage: string;
   callMode: 'audio' | 'video';
@@ -33,7 +34,7 @@ interface WaitingStateProps {
 }
 
 function WaitingState({
-  ringingRequest, interpreterReady, sourceLanguage, targetLanguage,
+  ringingRequest, interpreterReady, declinedByOther, sourceLanguage, targetLanguage,
   callMode, organizationName, languageName, onJoinSession, onBack, onRetry,
   attempt, onOpenSupport,
 }: WaitingStateProps) {
@@ -61,6 +62,37 @@ function WaitingState({
   const fmt = (s: number) =>
     `${Math.floor(s / 60).toString().padStart(2, '0')}:${(s % 60).toString().padStart(2, '0')}`;
   const countdown = Math.max(0, 60 - elapsed);
+
+  if (declinedByOther) {
+    return (
+      <div className="space-y-4 text-white">
+        <div className="rounded-2xl border border-red-500/40 bg-red-950/60 px-5 py-6 text-center space-y-3 backdrop-blur-md">
+          <div className="mx-auto w-16 h-16 rounded-full bg-red-500/20 border border-red-400/40 flex items-center justify-center">
+            <AlertCircle className="w-8 h-8 text-red-300" />
+          </div>
+          <h2 className="text-xl font-black text-white">Call Declined</h2>
+          <p className="text-sm text-red-200">
+            The call was declined and the session has ended for both sides.
+          </p>
+          <button
+            type="button"
+            onClick={onRetry}
+            className="w-full h-12 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-extrabold text-sm cursor-pointer transition-all flex items-center justify-center gap-2 mt-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Call Again
+          </button>
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          className="w-full h-11 rounded-xl border border-white/20 bg-white/5 text-slate-300 text-xs font-bold cursor-pointer hover:bg-white/10"
+        >
+          Back to form
+        </button>
+      </div>
+    );
+  }
 
   if (interpreterReady && ringingRequest?.activeSessionId) {
     return (
@@ -213,6 +245,8 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
   const [callMode, setCallMode] = useState<'audio' | 'video'>('audio');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [calling, setCalling] = useState(false);
+  const [declinedByOther, setDeclinedByOther] = useState(false);
+  const [trackedRef, setTrackedRef] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(1);
   const ringRef = useRef<{ stop: () => void } | null>(null);
@@ -282,7 +316,7 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
     ? requests.find(
         (item) =>
           item.requesterId === currentUser.id &&
-          ['matching', 'assigned', 'in_session'].includes(item.status),
+          ['matching', 'assigned', 'in_session', 'cancelled', 'unresolved'].includes(item.status),
       )
     : activeRequest; // also show if there's already an active request from a previous load
 
@@ -292,24 +326,34 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
 
   // Show the ringing page if either the client just submitted (calling) OR
   // there is already an active request in progress (prevents double-submit).
-  const showCalling = calling || Boolean(activeRequest);
-  const phoneRinging = showCalling && !interpreterReady && !isSubmitting;
+  const showCalling = calling || Boolean(activeRequest) || declinedByOther;
+  const phoneRinging = showCalling && !interpreterReady && !declinedByOther && !isSubmitting;
   const languageName = (code?: string) => languages.find((item) => item.code === code)?.name || (code ? code.toUpperCase() : 'Unknown language');
 
-  // Go back to form only when the active request fully disappears (completed/cancelled/expired)
-  // OR when the session starts (in_session — the auto-join in usePortal will open the room).
+  // Track active request reference and detect if it is declined/unresolved while waiting.
+  useEffect(() => {
+    if (ringingRequest?.reference && ['matching', 'assigned', 'in_session'].includes(ringingRequest.status)) {
+      setTrackedRef(ringingRequest.reference);
+    }
+  }, [ringingRequest?.reference, ringingRequest?.status]);
+
   useEffect(() => {
     if (!showCalling || isSubmitting) return;
-    const request = requests.find((item) => item.requesterId === currentUser.id &&
-      ['submitted', 'validating', 'matching', 'assigned', 'pending_matching',
-       'completed', 'cancelled', 'expired', 'unresolved', 'in_session'].includes(item.status));
-    if (!request) return;
-    if (['completed', 'cancelled', 'expired', 'unresolved'].includes(request.status)) {
+    const target = trackedRef
+      ? requests.find((item) => item.reference === trackedRef)
+      : requests.find((item) => item.requesterId === currentUser.id &&
+          ['submitted', 'validating', 'matching', 'assigned', 'pending_matching',
+           'completed', 'cancelled', 'expired', 'unresolved', 'in_session'].includes(item.status));
+    if (!target) return;
+    if (['unresolved', 'cancelled'].includes(target.status)) {
+      setDeclinedByOther(true);
+    } else if (['completed', 'expired'].includes(target.status)) {
       setCalling(false);
+      setDeclinedByOther(false);
+      setTrackedRef(null);
       setAttempt(1);
     }
-    // in_session: stay on ringing page showing "Interpreter ready - Join call"
-  }, [showCalling, currentUser.id, isSubmitting, requests]);
+  }, [showCalling, currentUser.id, isSubmitting, requests, trackedRef]);
 
   useEffect(() => {
     if (!phoneRinging) {
@@ -347,15 +391,28 @@ export const TriageTerminal: React.FC<TriageTerminalProps> = ({
             key={attempt}
             ringingRequest={ringingRequest}
             interpreterReady={interpreterReady}
+            declinedByOther={declinedByOther}
             sourceLanguage={sourceLanguage}
             targetLanguage={targetLanguage}
             callMode={callMode}
             organizationName={currentUser.organizationName}
             languageName={languageName}
             onJoinSession={onJoinSession}
-            onBack={() => { stopOutgoingRing(ringRef); setCalling(false); setAttempt(1); }}
+            onBack={async () => {
+              stopOutgoingRing(ringRef);
+              const refToCancel = ringingRequest?.reference || trackedRef;
+              setCalling(false);
+              setDeclinedByOther(false);
+              setTrackedRef(null);
+              setAttempt(1);
+              if (refToCancel && !declinedByOther) {
+                await onCancelRequest(refToCancel, 'Call declined by caller').catch(() => undefined);
+              }
+            }}
             onRetry={async () => {
               stopOutgoingRing(ringRef);
+              setDeclinedByOther(false);
+              setTrackedRef(null);
               setCalling(false);
               setAttempt((a) => a + 1);
               await new Promise((r) => setTimeout(r, 100));

@@ -208,9 +208,11 @@ export default function App() {
           onClose={() => portal.setActiveSessionRoomId(null)}
           onCallFinished={(sessionId) => {
             portal.setActiveSessionRoomId(null);
-            if (currentUser.role === 'client') portal.setFeedbackModalSessionId(sessionId);
-            // If interpreter has a pending assignment waiting, refresh so the ring shows immediately
-            if (currentUser.role === 'interpreter') portal.refreshData();
+            portal.setCallDeclinedInfo({
+              sessionId,
+              message: 'The call was declined or ended by the other side.',
+            });
+            portal.refreshData();
           }}
           onOpenCompletionModal={(sessionId) => {
             portal.setActiveSessionRoomId(null);
@@ -329,6 +331,58 @@ export default function App() {
           />
         );
       })()}
+
+      {/* Call Declined / Ended by Other Side Card */}
+      {portal.callDeclinedInfo && (
+        <div className="fixed inset-0 z-[65] flex items-center justify-center bg-slate-950/75 backdrop-blur-sm p-4">
+          <div className="w-full max-w-sm rounded-3xl border border-red-400/30 bg-slate-900 p-6 text-white shadow-2xl text-center space-y-4">
+            <div className="mx-auto w-14 h-14 rounded-full bg-red-500/20 border border-red-400/40 flex items-center justify-center">
+              <AlertCircle className="w-7 h-7 text-red-400" />
+            </div>
+            <div>
+              <h3 className="text-lg font-black text-white">Call Declined</h3>
+              <p className="mt-1 text-xs text-slate-300 leading-relaxed">
+                {portal.callDeclinedInfo.message}
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pt-1">
+              {currentUser.role === 'client' && portal.callDeclinedInfo.sessionId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sid = portal.callDeclinedInfo?.sessionId;
+                    portal.setCallDeclinedInfo(null);
+                    if (sid) portal.setFeedbackModalSessionId(sid);
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-bold cursor-pointer"
+                >
+                  Rate Session
+                </button>
+              )}
+              {currentUser.role === 'interpreter' && portal.callDeclinedInfo.sessionId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const sid = portal.callDeclinedInfo?.sessionId;
+                    portal.setCallDeclinedInfo(null);
+                    if (sid) portal.setCompletionModalSessionId(sid);
+                  }}
+                  className="flex-1 h-11 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-extrabold cursor-pointer"
+                >
+                  Complete Report
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => portal.setCallDeclinedInfo(null)}
+                className="flex-1 h-11 rounded-xl border border-white/20 bg-white/10 hover:bg-white/15 text-white text-xs font-bold cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Active Meeting Room overlay */}
       {portal.activeMeetingId && (() => {

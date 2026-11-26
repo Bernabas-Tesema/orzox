@@ -44,6 +44,10 @@ export function usePortal() {
   const [activeSessionRoomId, setActiveSessionRoomId] = useState<string | null>(null);
   const [completionModalSessionId, setCompletionModalSessionId] = useState<string | null>(null);
   const [pendingCompletionSessionIds, setPendingCompletionSessionIds] = useState<string[]>([]);
+  const [callDeclinedInfo, setCallDeclinedInfo] = useState<{
+    sessionId?: string;
+    message: string;
+  } | null>(null);
   const [feedbackModalSessionId, setFeedbackModalSessionId] = useState<string | null>(null);
   const [isOrzoSupportOpen, setIsOrzoSupportOpen] = useState(false);
   const [preselectedSourceLanguage, setPreselectedSourceLanguage] = useState<string | null>(null);
@@ -278,6 +282,29 @@ export function usePortal() {
     }, 250);
     return () => window.clearInterval(timer);
   }, [assignments, requests, sessions, currentUser, refreshData, feedbackModalSessionId]);
+
+  // Track if a ringing assignment's request was cancelled/declined by the caller
+  const lastPendingRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (currentUser?.role !== 'interpreter') {
+      lastPendingRef.current = null;
+      return;
+    }
+    const pending = assignments.find((a) => a.outcome === 'pending');
+    if (pending) {
+      lastPendingRef.current = pending.requestReference;
+      return;
+    }
+    if (lastPendingRef.current) {
+      const prevReq = requests.find((r) => r.reference === lastPendingRef.current);
+      if (prevReq && prevReq.status === 'cancelled') {
+        setCallDeclinedInfo({
+          message: 'The caller declined or cancelled the incoming call.',
+        });
+      }
+      lastPendingRef.current = null;
+    }
+  }, [currentUser?.role, assignments, requests]);
 
   useEffect(() => {
     if (!currentUser || currentUser.role !== 'client') {
@@ -582,6 +609,8 @@ export function usePortal() {
     setCompletionModalSessionId,
     pendingCompletionSessionIds,
     setPendingCompletionSessionIds,
+    callDeclinedInfo,
+    setCallDeclinedInfo,
     feedbackModalSessionId,
     setFeedbackModalSessionId,
     isOrzoSupportOpen,
