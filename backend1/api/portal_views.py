@@ -1792,11 +1792,14 @@ def waiting_calls(request: HttpRequest) -> JsonResponse:
     if not live_refs:
         return JsonResponse({"waitingCalls": []})
 
-    qs = InterpretationRequest.objects.filter(
-        reference__in=live_refs,
-        status__in=["matching", "assigned"],
-        assigned_interpreter_id__isnull=True,
-    ).order_by("created_at")
+    qs = (
+        InterpretationRequest.objects.filter(
+            reference__in=live_refs,
+            status__in=["matching", "assigned"],
+        )
+        .filter(Q(assigned_interpreter_id__isnull=True) | Q(assigned_interpreter_id=""))
+        .order_by("created_at")
+    )
 
     # Exclude requests whose session is already ready_to_join or active
     taken_refs = set(
